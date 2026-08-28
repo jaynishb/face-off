@@ -149,7 +149,19 @@ Tic-Tac-Toe (best of 5), Tap Race, and Connect Four are all implemented and regi
 - **Tap Race**: first game to use `InputManager.configure_zones()` — each half splits into a top/bottom tap button. Alternating the two buttons gives the full boost; mashing one gives a reduced "mash" boost, per the PRD's explicit anti-degenerate-strategy note. `MatchHost` now resets `InputManager.configure_zones([])` before every game's `setup()` so a zone config never leaks from one game into the next.
 - **Connect Four**: standard 7x6, turn-based like Tic-Tac-Toe but a single decisive match (no rounds) — 4-in-a-row any direction wins, a full board with no winner is a draw. Token-drop bounce animation is deferred to the Day 4 polish pass; drops currently render instantly.
 
-**Outstanding:** Sumo Blob + the art/audio/haptics polish pass (Day 4), and AdMob/IAP/store submission (Day 5) — see PRD §9. Nothing in this repo has been run in the Godot editor yet (still no Godot binary in this environment) — the multi-touch hardware check from Day 1 is still the top-priority unverified item before trusting any of this.
+## Day 4 status
+
+Sumo Blob is implemented: manual circle-physics blobs on a platform that shrinks from radius 300→120 over 30 seconds per round, tap-to-dash toward the platform centre with a 0.4s cooldown, blob-blob elastic collision, procedural squash-and-stretch (drawn as a scaled polygon, no sprite needed), haptic pulses on dash/impact via `Input.vibrate_handheld()` gated by `SaveManager.haptics_enabled`, best-of-3. A simultaneous double-fall replays the round without scoring either side.
+
+**All 6 launch games are now implemented and registered** — `GameSelect` no longer shows any "SOON" tile for the launch roster.
+
+What Day 4 explicitly asked for that is **not** done, and can't be done from this environment:
+- **Final sprites / real art.** Every game currently draws itself procedurally (`_draw()` with primitive shapes) using `Palette` colors — no illustrated blob/paddle/puck/car art exists. This needs an artist or an art-generation tool this session doesn't have.
+- **Real audio.** `AudioManager._sfx_library` is empty — `play_sfx()` calls throughout the games (`"paddle_hit"`, `"goal"`, `"dash"`, `"blob_impact"`, `"fall"`, etc.) are already wired at every correct moment, but they no-op until actual `AudioStream` assets (with P1/P2 pitch-shifted variants) are registered into that dictionary. Same for the menu music loop.
+- **Particle pops** on impact events — no particle system wired yet.
+- **Real-hardware multi-touch verification** — still the single most important unresolved item from Day 1, and nothing since has changed that.
+
+**Outstanding overall:** the art/audio asset production above, then Day 5 (AdMob SDK binding via the actual Godot AdMob plugin, platform IAP via the Android IAP plugin/StoreKit, store listing assets, signed builds, submission) — see PRD §9. `AdManager`'s placement/frequency-cap *logic* is already real and enforced; only the SDK call itself is a stub. None of this repo has been opened in the Godot editor (no Godot binary in this environment).
 
 ## Reference
 
