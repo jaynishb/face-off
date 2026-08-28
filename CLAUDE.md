@@ -122,7 +122,13 @@ If day 3 slips, cut Connect Four before cutting the polish pass — a smaller se
 
 ## Commands
 
-No build tooling exists in this repo yet (empty at time of writing). Once the Godot project is scaffolded, document actual editor/CLI export commands here — do not invent commands preemptively.
+Open the project with `godot4 --editor --path .` (or the Godot 4 editor's "Import" pointed at `project.godot`). No export presets are configured yet (that's Day 5); `export_presets.cfg` is gitignored once it exists since it can carry local signing paths.
+
+## Day 1 status
+
+Foundation scaffold is in place: `project.godot` (landscape lock, mobile renderer, autoloads registered), `InputManager` (multi-touch, zone config, touch-begin ownership), `GameManager` (game registry + `MiniGame` contract wiring), `SaveManager` (ConfigFile-backed prefs), `AudioManager` and `AdManager` stubs (ad placement/frequency-cap rules already enforced in `AdManager`, SDK binding is a TODO), `Palette.gd`, and shared components (`CountdownOverlay`, `ScoreDisplay`, `WinBanner`, `MatchTimer`) as scripts awaiting their `.tscn` scenes in Day 2.
+
+**Outstanding before Day 1 is truly done:** real-hardware multi-touch verification (PRD's stated exit criteria — "two fingers on opposite screen halves both register independently, verified on hardware"). This environment has no Godot binary and no device, so that check has not been run yet. Do this first thing before building on top of `InputManager`.
 
 ## Reference
 
