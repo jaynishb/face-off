@@ -141,7 +141,15 @@ Implementation notes / deviations worth knowing about:
 - `GameSelect` checks `ResourceLoader.exists()` on each registry entry's scene path and renders a disabled "SOON" tile for games not yet built (Tic-Tac-Toe, Tap Race, Connect Four, Sumo Blob), so the always-complete `GAME_REGISTRY`/`LAUNCH_ROSTER` doesn't dead-end players on a crash. This self-clears as each game lands — no code change needed.
 - `AdManager`'s interstitial is still a stub (`call_deferred` immediately resolves it) — the gating logic (grace period, frequency cap, cooldown) is real and already wired into the `MatchHost` → `Results` transition; only the actual AdMob call is a placeholder (Day 5 work).
 
-**Outstanding for Day 2:** Tic-Tac-Toe, Tap Race, and Connect Four (Day 3), Sumo Blob + the art/audio/haptics polish pass (Day 4), and AdMob/IAP/store submission (Day 5) — see PRD §9. None of this has been run in the Godot editor.
+## Day 3 status
+
+Tic-Tac-Toe (best of 5), Tap Race, and Connect Four are all implemented and registered — all 6 launch games now have a scene, so `GameSelect`'s "SOON" placeholder no longer applies to any of them.
+
+- **Tic-Tac-Toe**: shared centered board, turn enforced via `current_turn` (a touch from the player who isn't up is ignored), best-of-5 rounds, loser of a round opens the next one, a drawn round replays without scoring either side.
+- **Tap Race**: first game to use `InputManager.configure_zones()` — each half splits into a top/bottom tap button. Alternating the two buttons gives the full boost; mashing one gives a reduced "mash" boost, per the PRD's explicit anti-degenerate-strategy note. `MatchHost` now resets `InputManager.configure_zones([])` before every game's `setup()` so a zone config never leaks from one game into the next.
+- **Connect Four**: standard 7x6, turn-based like Tic-Tac-Toe but a single decisive match (no rounds) — 4-in-a-row any direction wins, a full board with no winner is a draw. Token-drop bounce animation is deferred to the Day 4 polish pass; drops currently render instantly.
+
+**Outstanding:** Sumo Blob + the art/audio/haptics polish pass (Day 4), and AdMob/IAP/store submission (Day 5) — see PRD §9. Nothing in this repo has been run in the Godot editor yet (still no Godot binary in this environment) — the multi-touch hardware check from Day 1 is still the top-priority unverified item before trusting any of this.
 
 ## Reference
 

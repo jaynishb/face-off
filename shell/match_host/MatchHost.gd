@@ -18,6 +18,7 @@ func _ready() -> void:
 		get_tree().change_scene_to_file("res://shell/game_select/GameSelect.tscn")
 		return
 
+	InputManager.configure_zones([]) # reset any zone config left by a previous game
 	add_child(_game)
 	_game.setup({})
 	_game.score_updated.connect(_on_score_updated)
