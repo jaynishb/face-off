@@ -163,6 +163,23 @@ What Day 4 explicitly asked for that is **not** done, and can't be done from thi
 
 **Outstanding overall:** the art/audio asset production above, then Day 5 (AdMob SDK binding via the actual Godot AdMob plugin, platform IAP via the Android IAP plugin/StoreKit, store listing assets, signed builds, submission) — see PRD §9. `AdManager`'s placement/frequency-cap *logic* is already real and enforced; only the SDK call itself is a stub. None of this repo has been opened in the Godot editor (no Godot binary in this environment).
 
+## Day 5 status
+
+Everything Day 5 that's pure text/code is done:
+
+- `STORE_LISTING.md` — full title/short description/keywords/long description/screenshot plan, expanded from PRD §10.
+- `PRIVACY_POLICY.md` — a real draft (offline-only, ad SDK disclosure, no data collection, IAP handled by the platform, children's-privacy note tied to PRD §8.4/§14's open age-rating decision). Has `[TODO]` markers for a real date/contact/ad-network confirmation before it's hosted.
+- Settings now has a working Privacy Policy button (`shell/settings/Settings.gd`) that opens a URL via `OS.shell_open()` — currently a placeholder (`PRIVACY_POLICY_URL`) that needs to point at wherever `PRIVACY_POLICY.md` actually gets hosted.
+
+**What Day 5 also calls for that genuinely cannot be done from this environment**, regardless of effort — these need tools/access this session doesn't have, not just more time:
+- **AdMob SDK binding.** Installing the actual Godot AdMob plugin means pulling a native Android (Java/Kotlin + Gradle) and/or iOS plugin into the export pipeline — this needs the Godot editor's AssetLib/export system, not just source files.
+- **Platform IAP** (Android IAP plugin / StoreKit) — same constraint, plus a real Google Play Console / App Store Connect product needs to exist first.
+- **Store screenshots, preview video, app icon/feature graphic at store resolutions.** Every game currently draws with placeholder `_draw()` shapes (see Day 4 status) — there's nothing screenshot-worthy to capture yet, and no device/simulator here to capture it with anyway.
+- **Signed `.aab` / iOS archive.** Requires the Godot editor, export templates, and real signing keys/certificates.
+- **Real-hardware multi-touch verification** — unresolved since Day 1, and still the single highest-priority item before any of this ships, per PRD's own stated Day 1 exit criteria.
+
+In short: the app's game logic and shell are code-complete for all 6 launch games (Days 1–4), and the Day 5 paperwork that doesn't require a device or the Godot editor is done. What remains — SDK integration, IAP, real assets, signing, submission — needs a human with a Godot editor, an Android device, and store console access.
+
 ## Reference
 
 Full product spec, personas, wireframes, store listing copy, and success metrics: `FACE_OFF_PRD.md`.

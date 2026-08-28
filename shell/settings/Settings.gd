@@ -43,6 +43,10 @@ func _ready() -> void:
 	restore_btn.pressed.connect(_on_restore_pressed)
 	vbox.add_child(restore_btn)
 
+	var privacy_btn := UIUtil.make_button("Privacy Policy", 18, Palette.SURFACE)
+	privacy_btn.pressed.connect(_on_privacy_pressed)
+	vbox.add_child(privacy_btn)
+
 	var version_label := UIUtil.make_label("v%s" % VERSION, 16)
 	version_label.modulate.a = 0.6
 	vbox.add_child(version_label)
@@ -65,3 +69,8 @@ func _make_toggle_row(label_text: String, initial: bool, on_toggled: Callable) -
 func _on_restore_pressed() -> void:
 	# TODO: wire to platform purchase restore (Android IAP plugin / StoreKit).
 	pass
+
+const PRIVACY_POLICY_URL := "https://example.com/faceoff/privacy" # TODO: replace with the real hosted URL before submission (see PRIVACY_POLICY.md)
+
+func _on_privacy_pressed() -> void:
+	OS.shell_open(PRIVACY_POLICY_URL)
