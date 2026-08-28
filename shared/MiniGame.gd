@@ -12,6 +12,11 @@ var match_duration: float = 0.0 ## 0 = untimed / first-to-win
 
 signal match_ended(winner: int, score_p1: int, score_p2: int)
 
+## Optional: emit whenever the live score changes so the shell's score bar
+## can update mid-match (PRD 7.4's ●●●○○ pip display). Not required for
+## turn-based games that track their own on-board state (e.g. Tic-Tac-Toe).
+signal score_updated(score_p1: int, score_p2: int)
+
 ## Called once by GameManager right after the scene is instanced, before
 ## start_match(). config carries any per-launch options (currently unused,
 ## reserved for things like difficulty/variant flags added later).

@@ -8,8 +8,20 @@ class_name WinBanner
 var _title_label: Label
 
 func _ready() -> void:
+	layer = 40
 	_title_label = get_node_or_null(title_label_path)
+	if not _title_label:
+		_build_ui()
 	visible = false
+
+func _build_ui() -> void:
+	_title_label = Label.new()
+	_title_label.set_anchors_preset(Control.PRESET_CENTER)
+	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_title_label.add_theme_font_size_override("font_size", 64)
+	_title_label.pivot_offset = Vector2(160, 40)
+	add_child(_title_label)
 
 func show_winner(winner: int) -> void:
 	visible = true

@@ -126,9 +126,22 @@ Open the project with `godot4 --editor --path .` (or the Godot 4 editor's "Impor
 
 ## Day 1 status
 
-Foundation scaffold is in place: `project.godot` (landscape lock, mobile renderer, autoloads registered), `InputManager` (multi-touch, zone config, touch-begin ownership), `GameManager` (game registry + `MiniGame` contract wiring), `SaveManager` (ConfigFile-backed prefs), `AudioManager` and `AdManager` stubs (ad placement/frequency-cap rules already enforced in `AdManager`, SDK binding is a TODO), `Palette.gd`, and shared components (`CountdownOverlay`, `ScoreDisplay`, `WinBanner`, `MatchTimer`) as scripts awaiting their `.tscn` scenes in Day 2.
+Foundation scaffold is in place: `project.godot` (landscape lock, mobile renderer, autoloads registered), `InputManager` (multi-touch, zone config, touch-begin ownership), `GameManager` (game registry + `MiniGame` contract wiring), `SaveManager` (ConfigFile-backed prefs), `AudioManager` and `AdManager` stubs (ad placement/frequency-cap rules already enforced in `AdManager`, SDK binding is a TODO), `Palette.gd`, and shared components (`CountdownOverlay`, `ScoreDisplay`, `WinBanner`, `MatchTimer`).
 
-**Outstanding before Day 1 is truly done:** real-hardware multi-touch verification (PRD's stated exit criteria — "two fingers on opposite screen halves both register independently, verified on hardware"). This environment has no Godot binary and no device, so that check has not been run yet. Do this first thing before building on top of `InputManager`.
+**Outstanding before Day 1 is truly done:** real-hardware multi-touch verification (PRD's stated exit criteria — "two fingers on opposite screen halves both register independently, verified on hardware"). This environment has no Godot binary and no device, so that check has not been run yet. Do this first thing before trusting anything built on top of `InputManager` (all of Day 2 below is currently unverified for the same reason).
+
+## Day 2 status
+
+Shell is wired end to end: `MainMenu` → `GameSelect` → (auto-shown `RulesCard` on first play) → `MatchHost` (countdown → live game → `WinBanner`) → interstitial gate → `Results` → rematch or menu. Air Hockey and Ping Pong are both fully playable (drag-paddle physics, scoring, win condition).
+
+Implementation notes / deviations worth knowing about:
+- Screens build their UI in code (`_ready()`) rather than hand-authored node trees in `.tscn` — each `.tscn` is a thin wrapper (root node + script). Chosen because this environment has no Godot editor to hand-verify a complex scene tree; code-built UI is easier to review for correctness by reading it. Revisit once someone can open the editor — hand-tuned `.tscn` layouts will look better and are more designer-friendly to iterate on.
+- `RulesCard` is a `class_name` (`CanvasLayer` subclass) instantiated directly (`RulesCard.new()`), not a loaded `.tscn` scene, for the same reason. Same pattern as `CountdownOverlay`/`WinBanner`.
+- `MiniGame` contract gained one addition beyond the PRD's literal text: an optional `score_updated(score_p1, score_p2)` signal, so the shell's live score bar (PRD 7.4's pip display) can update mid-match. `match_ended` is unchanged and still the signal that ends a match.
+- `GameSelect` checks `ResourceLoader.exists()` on each registry entry's scene path and renders a disabled "SOON" tile for games not yet built (Tic-Tac-Toe, Tap Race, Connect Four, Sumo Blob), so the always-complete `GAME_REGISTRY`/`LAUNCH_ROSTER` doesn't dead-end players on a crash. This self-clears as each game lands — no code change needed.
+- `AdManager`'s interstitial is still a stub (`call_deferred` immediately resolves it) — the gating logic (grace period, frequency cap, cooldown) is real and already wired into the `MatchHost` → `Results` transition; only the actual AdMob call is a placeholder (Day 5 work).
+
+**Outstanding for Day 2:** Tic-Tac-Toe, Tap Race, and Connect Four (Day 3), Sumo Blob + the art/audio/haptics polish pass (Day 4), and AdMob/IAP/store submission (Day 5) — see PRD §9. None of this has been run in the Godot editor.
 
 ## Reference
 

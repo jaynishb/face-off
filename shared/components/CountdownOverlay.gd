@@ -13,8 +13,27 @@ signal countdown_finished
 var _label: Label
 
 func _ready() -> void:
+	layer = 50
 	_label = get_node_or_null(label_path)
+	if not _label:
+		_build_ui()
 	visible = false
+
+func _build_ui() -> void:
+	var dim := ColorRect.new()
+	dim.color = Color(Palette.INK, 0.25)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(dim)
+
+	_label = Label.new()
+	_label.set_anchors_preset(Control.PRESET_CENTER)
+	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_label.add_theme_font_size_override("font_size", 96)
+	_label.add_theme_color_override("font_color", Palette.INK)
+	_label.pivot_offset = Vector2(60, 60)
+	add_child(_label)
 
 func play() -> void:
 	visible = true

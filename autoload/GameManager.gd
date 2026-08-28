@@ -7,36 +7,45 @@ extends Node
 
 ## game_id -> { scene: String (path to the game's .tscn), display_name: String,
 ##              icon: String (path to a Texture2D resource) }
+## rules_text is authoritative for GameSelect/RulesCard, which need it before
+## a game scene is instantiated. Each MiniGame also sets its own rules_text
+## on itself, matching this, per the shell contract in CLAUDE.md.
 const GAME_REGISTRY := {
 	"air_hockey": {
 		"scene": "res://games/air_hockey/AirHockey.tscn",
 		"display_name": "Air Hockey",
-		"icon": "res://games/air_hockey/icon.svg",
+		"emoji": "🏒",
+		"rules_text": "Drag your paddle.\nHit the puck into their goal.\nFirst to 5 wins.",
 	},
 	"ping_pong": {
 		"scene": "res://games/ping_pong/PingPong.tscn",
 		"display_name": "Ping Pong",
-		"icon": "res://games/ping_pong/icon.svg",
+		"emoji": "🏓",
+		"rules_text": "Slide your paddle.\nDon't let the ball past.\nFirst to 7 wins.",
 	},
 	"tic_tac_toe": {
 		"scene": "res://games/tic_tac_toe/TicTacToe.tscn",
 		"display_name": "Tic-Tac-Toe",
-		"icon": "res://games/tic_tac_toe/icon.svg",
+		"emoji": "⭕❌",
+		"rules_text": "Tap a square.\nThree in a row wins the round.\nFirst to 3 rounds wins.",
 	},
 	"tap_race": {
 		"scene": "res://games/tap_race/TapRace.tscn",
 		"display_name": "Tap Race",
-		"icon": "res://games/tap_race/icon.svg",
+		"emoji": "🏎",
+		"rules_text": "Tap your two buttons as fast as you can.\nFirst to the finish wins!",
 	},
 	"connect_four": {
 		"scene": "res://games/connect_four/ConnectFour.tscn",
 		"display_name": "Connect Four",
-		"icon": "res://games/connect_four/icon.svg",
+		"emoji": "🔴🟡",
+		"rules_text": "Tap a column to drop your piece.\nFour in a row — any direction — wins.",
 	},
 	"sumo_blob": {
 		"scene": "res://games/sumo_blob/SumoBlob.tscn",
 		"display_name": "Sumo Blob",
-		"icon": "res://games/sumo_blob/icon.svg",
+		"emoji": "🟠🔵",
+		"rules_text": "Tap to dash.\nPush them off the edge.\nBest of 3 wins.",
 	},
 }
 
@@ -48,6 +57,15 @@ const LAUNCH_ROSTER := [
 
 var current_game_id: String = ""
 var current_match: MiniGame
+
+## Set by GameSelect before changing to MatchHost.tscn; read once by MatchHost.
+var pending_game_id: String = ""
+
+## Set right before the Results scene is loaded, since change_scene_to_file()
+## discards local state. Results reads these in _ready().
+var last_winner: int = 0
+var last_score_p1: int = 0
+var last_score_p2: int = 0
 
 ## Session-scoped head-to-head tally, cleared on app close (not persisted).
 ## game_id -> { p1_wins: int, p2_wins: int }
@@ -87,8 +105,15 @@ func _on_match_ended(winner: int, score_p1: int, score_p2: int) -> void:
 		tally.p2_wins += 1
 	session_head_to_head[current_game_id] = tally
 
+	last_winner = winner
+	last_score_p1 = score_p1
+	last_score_p2 = score_p2
+
 	SaveManager.increment_games_played()
 	match_finished.emit(current_game_id, winner, score_p1, score_p2)
+
+func get_session_tally(game_id: String) -> Dictionary:
+	return session_head_to_head.get(game_id, {"p1_wins": 0, "p2_wins": 0})
 
 func clear_session_tally() -> void:
 	session_head_to_head.clear()
