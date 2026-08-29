@@ -10,6 +10,16 @@ var _p2_score_label: Label
 var _paused_overlay: CanvasLayer
 
 func _ready() -> void:
+	# A plain Control's default mouse_filter (STOP) swallows every tap over
+	# its full rect before it can ever reach InputManager's _unhandled_input,
+	# even with no _gui_input override -- that's Godot's documented behavior
+	# for MOUSE_FILTER_STOP. MatchHost covers the whole screen, so left at
+	# the default it silently blocks all gameplay touches. IGNORE here lets
+	# touches fall through to InputManager; interactive children (the pause
+	# button) still get their own clicks since they hit-test independently
+	# with their own (STOP) filter. Caught by a real phone reporting "no
+	# controls" -- see CLAUDE.md.
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 
 	var game_id: String = GameManager.pending_game_id
