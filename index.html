@@ -78,7 +78,54 @@ body {
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
-
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1D2B36; overscroll-behavior: none; }
+  /* Face Off is landscape-locked, but a phone browser cannot force landscape
+     the way a native app can, and CSS-rotating the canvas itself was tried
+     and rejected: Godot's web input reads touch/click position off the
+     canvas's post-transform getBoundingClientRect() and maps it onto the
+     canvas's pre-transform pixel buffer, so a rotated canvas silently
+     scrambles every tap coordinate -- the same class of 'no controls' bug
+     fixed earlier in this project (see CLAUDE.md), just reintroduced for
+     portrait phones instead of fixed for all of them. So the canvas itself
+     is never transformed; instead a full-screen prompt covers it and asks
+     for a physical rotation whenever the viewport is in portrait. */
+  #rotate-prompt {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #1D2B36;
+    color: #FFFDF7;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: sans-serif;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+  #rotate-prompt .icon { font-size: 64px; animation: rotate-hint 1.6s ease-in-out infinite; margin-bottom: 16px; }
+  #rotate-prompt p { font-size: 18px; max-width: 320px; line-height: 1.4; }
+  @keyframes rotate-hint {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+  }
+  @media screen and (orientation: portrait) {
+    #rotate-prompt { display: flex; }
+  }
+</style>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    var prompt = document.createElement('div');
+    prompt.id = 'rotate-prompt';
+    prompt.innerHTML = '<div class="icon">&#128241;</div><p>Turn your phone sideways --<br>Face Off is a landscape game.</p>';
+    document.body.appendChild(prompt);
+  });
+</script>
 	</head>
 	<body>
 		<canvas id="canvas">
@@ -97,7 +144,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":142128,"index.wasm":43016933},"focusCanvas":true,"gdextensionLibs":[]};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1120944,"index.wasm":43016933},"focusCanvas":true,"gdextensionLibs":[]};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
