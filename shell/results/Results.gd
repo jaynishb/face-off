@@ -13,7 +13,7 @@ func _ready() -> void:
 
 	var title := UIUtil.make_label(title_text, 56, title_color)
 	title.position = Vector2(0, 100)
-	title.size = Vector2(1280, 80)
+	title.size = Vector2(Field.width(), 80)
 	add_child(title)
 
 	var tally := GameManager.get_session_tally(GameManager.current_game_id)
@@ -21,18 +21,18 @@ func _ready() -> void:
 		"Today:  P1 %d — %d P2" % [tally.get("p1_wins", 0), tally.get("p2_wins", 0)], 26
 	)
 	tally_label.position = Vector2(0, 220)
-	tally_label.size = Vector2(1280, 40)
+	tally_label.size = Vector2(Field.width(), 40)
 	add_child(tally_label)
 
 	var rematch_btn := UIUtil.make_button("REMATCH", 40, Palette.SUCCESS)
 	rematch_btn.custom_minimum_size = Vector2(440, 140)
-	rematch_btn.position = Vector2(640 - 460, 420)
+	rematch_btn.position = Vector2(Field.mid_x() - 460, 420)
 	rematch_btn.pressed.connect(_on_rematch_pressed)
 	add_child(rematch_btn)
 
 	var menu_btn := UIUtil.make_button("MENU", 32, Palette.SURFACE)
 	menu_btn.custom_minimum_size = Vector2(280, 100)
-	menu_btn.position = Vector2(640 + 40, 440)
+	menu_btn.position = Vector2(Field.mid_x() + 40, 440)
 	menu_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
 	add_child(menu_btn)
 

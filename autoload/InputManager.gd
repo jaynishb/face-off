@@ -23,6 +23,21 @@ var _active_touches: Dictionary = {}
 # Each entry: { player: int, zone: int, rect: Rect2 } in viewport coordinates.
 var _zone_rects: Array = []
 
+## Shared-board mode. Some games (Tic-Tac-Toe, Connect Four) are played on ONE
+## communal board that straddles the midline and take strict turns. Splitting
+## those by screen half is simply the wrong model: it makes a cell physically
+## unreachable for whichever player is on the far side of it, because their
+## touch gets attributed to the opponent and then rejected as out-of-turn.
+##
+## That is not hypothetical -- it softlocked Tic-Tac-Toe outright. On a screen
+## wider than 16:9 all nine cells fell on Player 1's side, so after P1's opening
+## move P2 could never place anywhere and the match could not be finished
+## (GAME_AUDIT.md C3).
+##
+## In shared-board mode ownership comes from whose turn it is, not from where
+## the finger landed, so either player can reach the whole board.
+var _shared_board_player: int = 0
+
 var debug_overlay_enabled: bool = false
 
 func _ready() -> void:
@@ -60,9 +75,20 @@ func _handle_drag(event: InputEventScreenDrag) -> void:
 	record.position = event.position
 	player_dragged.emit(record.player, record.zone, event.position, event.relative)
 
+## Ownership is decided against Field.mid_x() -- the same value MatchHost draws
+## its divider at and every game clamps to. Reading the viewport directly here
+## (as this used to) let the input split drift away from the drawn one on any
+## screen wider than 16:9; see Field.gd and GAME_AUDIT.md C1.
 func _player_for_position(position: Vector2) -> int:
-	var half_width := get_viewport().get_visible_rect().size.x * 0.5
-	return 1 if position.x < half_width else 2
+	if _shared_board_player != 0:
+		return _shared_board_player
+	return 1 if position.x < Field.mid_x() else 2
+
+## Turn-based shared-board games call this whenever the turn changes; every
+## touch is then credited to that player regardless of position. Pass 0 to
+## return to positional (split-screen) ownership.
+func set_shared_board_turn(player: int) -> void:
+	_shared_board_player = player
 
 func _zone_for_position(player: int, position: Vector2) -> int:
 	for entry in _zone_rects:

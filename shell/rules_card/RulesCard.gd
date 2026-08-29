@@ -28,7 +28,7 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 	style.set_content_margin_all(32)
 	card.add_theme_stylebox_override("panel", style)
 	card.custom_minimum_size = Vector2(640, 420)
-	card.position = Vector2(640 - 320, 360 - 210)
+	card.position = Vector2(Field.mid_x() - 320, Field.height() * 0.5 - 210)
 	add_child(card)
 	UIUtil.pop_in(card, 0.05)
 
@@ -65,7 +65,7 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 
 	var close_btn := UIUtil.make_button("X", 22, Palette.SURFACE)
 	close_btn.custom_minimum_size = Vector2(56, 56)
-	close_btn.position = Vector2(1280 - 80, 24)
+	close_btn.position = Vector2(Field.width() - 80, 24)
 	close_btn.pressed.connect(_on_dismiss)
 	add_child(close_btn)
 

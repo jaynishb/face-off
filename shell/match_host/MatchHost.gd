@@ -29,7 +29,10 @@ func _ready() -> void:
 		get_tree().change_scene_to_file("res://shell/game_select/GameSelect.tscn")
 		return
 
-	InputManager.configure_zones([]) # reset any zone config left by a previous game
+	# Reset any input config left behind by a previous game, so a mode never
+	# leaks across matches.
+	InputManager.configure_zones([])
+	InputManager.set_shared_board_turn(0)
 	add_child(_game)
 	_game.setup({})
 	_game.score_updated.connect(_on_score_updated)
@@ -60,28 +63,34 @@ func _build_score_bar() -> void:
 	bar.add_child(_p1_score_label)
 
 	_p2_score_label = UIUtil.make_label("0  P2", 28, Palette.PLAYER_2)
-	_p2_score_label.position = Vector2(1280 - 24 - 100, 16)
+	_p2_score_label.position = Vector2(Field.width() - 24 - 100, 16)
+	_p2_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_p2_score_label.size = Vector2(100, 40)
 	bar.add_child(_p2_score_label)
+
+	var mid := Field.mid_x()
 
 	# Not SURFACE -- the score bar behind it is already SURFACE, so a SURFACE
 	# button is invisible against it.
 	var exit_btn := UIUtil.make_button("X", 22, Palette.PLAYER_1)
 	exit_btn.custom_minimum_size = Vector2(48, 48)
-	exit_btn.position = Vector2(640 - 24 - 56, 8)
+	exit_btn.position = Vector2(mid - 24 - 56, 8)
 	exit_btn.pressed.connect(_on_exit_pressed)
 	bar.add_child(exit_btn)
 
 	var pause_btn := UIUtil.make_button("II", 22, Palette.ACCENT)
 	pause_btn.custom_minimum_size = Vector2(48, 48)
-	pause_btn.position = Vector2(640 - 24, 8)
+	pause_btn.position = Vector2(mid - 24, 8)
 	pause_btn.pressed.connect(_on_pause_pressed)
 	bar.add_child(pause_btn)
 
 func _build_midline() -> void:
+	# Must sit exactly on Field.mid_x() -- this line is the promise the input
+	# split makes to the players, so it can never be a hardcoded 638 again.
 	var divider := ColorRect.new()
 	divider.color = Color(Palette.INK, 0.15)
-	divider.position = Vector2(638, 64)
-	divider.size = Vector2(4, 720 - 64)
+	divider.position = Vector2(Field.mid_x() - 2, Field.SCORE_BAR_HEIGHT)
+	divider.size = Vector2(4, Field.height() - Field.SCORE_BAR_HEIGHT)
 	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(divider)
 
@@ -104,13 +113,13 @@ func _on_pause_pressed() -> void:
 
 	var resume_btn := UIUtil.make_button("RESUME", 28, Palette.SUCCESS)
 	resume_btn.process_mode = Node.PROCESS_MODE_ALWAYS
-	resume_btn.position = Vector2(640 - 140, 300)
+	resume_btn.position = Vector2(Field.mid_x() - 140, 300)
 	resume_btn.pressed.connect(_on_resume_pressed)
 	_paused_overlay.add_child(resume_btn)
 
 	var menu_btn := UIUtil.make_button("MENU", 24, Palette.SURFACE)
 	menu_btn.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_btn.position = Vector2(640 - 140, 420)
+	menu_btn.position = Vector2(Field.mid_x() - 140, 420)
 	menu_btn.pressed.connect(func():
 		get_tree().paused = false
 		get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn")
@@ -135,14 +144,14 @@ func _on_exit_pressed() -> void:
 
 	var prompt := UIUtil.make_label("Exit this match?", 32)
 	prompt.position = Vector2(0, 240)
-	prompt.size = Vector2(1280, 50)
+	prompt.size = Vector2(Field.width(), 50)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.process_mode = Node.PROCESS_MODE_ALWAYS
 	_paused_overlay.add_child(prompt)
 
 	var confirm_btn := UIUtil.make_button("EXIT TO MENU", 24, Palette.PLAYER_1)
 	confirm_btn.process_mode = Node.PROCESS_MODE_ALWAYS
-	confirm_btn.position = Vector2(640 - 140, 320)
+	confirm_btn.position = Vector2(Field.mid_x() - 140, 320)
 	confirm_btn.pressed.connect(func():
 		get_tree().paused = false
 		get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn")
@@ -151,7 +160,7 @@ func _on_exit_pressed() -> void:
 
 	var cancel_btn := UIUtil.make_button("KEEP PLAYING", 24, Palette.SUCCESS)
 	cancel_btn.process_mode = Node.PROCESS_MODE_ALWAYS
-	cancel_btn.position = Vector2(640 - 140, 440)
+	cancel_btn.position = Vector2(Field.mid_x() - 140, 440)
 	cancel_btn.pressed.connect(_on_resume_pressed)
 	_paused_overlay.add_child(cancel_btn)
 

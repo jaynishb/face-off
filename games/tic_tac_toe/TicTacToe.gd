@@ -5,8 +5,11 @@ extends MiniGame
 ## only the player whose turn it is can register a move.
 
 const CELL := 130.0
-const GRID_ORIGIN := Vector2(640 - 195, 393 - 195)
 const ROUNDS_TO_WIN := 3
+
+## Centred on the real visible rect, not a hardcoded 1280x720 box -- see
+## Field.gd. Set in setup() because the viewport isn't known at _init().
+var grid_origin := Vector2.ZERO
 const WIN_LINES := [
 	[0, 1, 2], [3, 4, 5], [6, 7, 8],
 	[0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -20,6 +23,7 @@ var p1_rounds := 0
 var p2_rounds := 0
 var _match_active := false
 var _round_locked := false
+var _message := ""
 
 func _init() -> void:
 	game_id = "tic_tac_toe"
@@ -28,11 +32,20 @@ func _init() -> void:
 	match_duration = 0.0
 
 func setup(_config: Dictionary) -> void:
+	grid_origin = Field.center() - Vector2(CELL * 1.5, CELL * 1.5)
+	# One shared board straddling the midline: ownership must follow the turn,
+	# not the screen half, or the far half of the board is unreachable for
+	# whoever is on the wrong side of it (GAME_AUDIT.md C3).
+	InputManager.set_shared_board_turn(current_turn)
 	_reset_board()
 	InputManager.player_pressed.connect(_on_touch)
 
 func start_match() -> void:
 	_match_active = true
+
+func _set_turn(player: int) -> void:
+	current_turn = player
+	InputManager.set_shared_board_turn(player)
 
 func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 	if not _match_active or _round_locked:
@@ -40,8 +53,8 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 	if player != current_turn:
 		return
 
-	var col := int((position.x - GRID_ORIGIN.x) / CELL)
-	var row := int((position.y - GRID_ORIGIN.y) / CELL)
+	var col := int((position.x - grid_origin.x) / CELL)
+	var row := int((position.y - grid_origin.y) / CELL)
 	if col < 0 or col > 2 or row < 0 or row > 2:
 		return
 
@@ -59,7 +72,7 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 	elif _board_full():
 		_round_draw()
 	else:
-		current_turn = 2 if current_turn == 1 else 1
+		_set_turn(2 if current_turn == 1 else 1)
 
 	queue_redraw()
 
@@ -89,13 +102,20 @@ func _round_won(winner: int) -> void:
 	else:
 		await get_tree().create_timer(1.0).timeout
 		_reset_board()
-		current_turn = 1 if winner == 2 else 2 # loser of the round opens the next one
+		_set_turn(1 if winner == 2 else 2) # loser of the round opens the next one
 		_round_locked = false
 
 func _round_draw() -> void:
 	_round_locked = true
-	await get_tree().create_timer(0.8).timeout
+	# Say so on screen -- the board used to just silently clear, which reads as
+	# the game eating your move (GAME_AUDIT.md L1).
+	_message = "DRAW — REPLAY"
+	queue_redraw()
+	await get_tree().create_timer(1.1).timeout
+	_message = ""
 	_reset_board()
+	# Whoever placed the last piece doesn't also get to open the replay.
+	_set_turn(2 if current_turn == 1 else 1)
 	_round_locked = false
 
 func _reset_board() -> void:
@@ -112,9 +132,9 @@ func _pop_piece(idx: int) -> void:
 
 func _draw() -> void:
 	for i in range(1, 3):
-		draw_line(GRID_ORIGIN + Vector2(i * CELL, 0), GRID_ORIGIN + Vector2(i * CELL, 3 * CELL), Palette.INK, 4)
-		draw_line(GRID_ORIGIN + Vector2(0, i * CELL), GRID_ORIGIN + Vector2(3 * CELL, i * CELL), Palette.INK, 4)
-	draw_rect(Rect2(GRID_ORIGIN, Vector2(3 * CELL, 3 * CELL)), Palette.INK, false, 4)
+		draw_line(grid_origin + Vector2(i * CELL, 0), grid_origin + Vector2(i * CELL, 3 * CELL), Palette.INK, 4)
+		draw_line(grid_origin + Vector2(0, i * CELL), grid_origin + Vector2(3 * CELL, i * CELL), Palette.INK, 4)
+	draw_rect(Rect2(grid_origin, Vector2(3 * CELL, 3 * CELL)), Palette.INK, false, 4)
 
 	for idx in range(9):
 		var v: int = board[idx]
@@ -122,7 +142,7 @@ func _draw() -> void:
 			continue
 		var row := idx / 3
 		var col := idx % 3
-		var center: Vector2 = GRID_ORIGIN + Vector2(col * CELL + CELL * 0.5, row * CELL + CELL * 0.5)
+		var center: Vector2 = grid_origin + Vector2(col * CELL + CELL * 0.5, row * CELL + CELL * 0.5)
 		var color := Palette.for_player(v)
 		var s: float = piece_scale[idx]
 		if v == 1:
@@ -132,5 +152,13 @@ func _draw() -> void:
 		else:
 			draw_arc(center, 45.0 * s, 0, TAU, 32, color, 10)
 
-	var turn_color := Palette.for_player(current_turn)
-	draw_rect(Rect2(GRID_ORIGIN.x, GRID_ORIGIN.y - 30, 3 * CELL, 12), turn_color)
+	var banner_center := Vector2(grid_origin.x + 1.5 * CELL, grid_origin.y - 44.0)
+	if _message != "":
+		var font := ThemeDB.fallback_font
+		var size := font.get_string_size(_message, HORIZONTAL_ALIGNMENT_LEFT, -1, 28)
+		draw_string(
+			font, banner_center + Vector2(-size.x * 0.5, size.y * 0.34),
+			_message, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Palette.ACCENT,
+		)
+	else:
+		TurnBanner.draw_turn(self, banner_center, current_turn)

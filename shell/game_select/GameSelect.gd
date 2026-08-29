@@ -15,12 +15,15 @@ func _ready() -> void:
 
 	var title := UIUtil.make_label("CHOOSE A GAME", 40)
 	title.position = Vector2(0, 24)
-	title.size = Vector2(1280, 60)
+	title.size = Vector2(Field.width(), 60)
 	add_child(title)
 
+	# Centred on the real visible rect, not a fixed 1280-wide box, so the tile
+	# grid doesn't sit left of centre on a wider-than-16:9 screen (Field.gd).
+	var grid_width := 3 * 360.0 + 2 * 24.0
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(40, 140)
-	scroll.size = Vector2(1200, 520)
+	scroll.position = Vector2(Field.mid_x() - grid_width * 0.5, 140)
+	scroll.size = Vector2(grid_width, 520)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)

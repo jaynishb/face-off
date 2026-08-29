@@ -6,16 +6,22 @@ const PADDLE_WIDTH := 18.0
 const PADDLE_HEIGHT := 140.0
 const PADDLE_MARGIN := 40.0
 const BALL_RADIUS := 14.0
-const FIELD_TOP := 76.0
-const FIELD_BOTTOM := 710.0
 const WIN_SCORE := 7
 const BASE_BALL_SPEED := 420.0
 const SPEED_INCREMENT := 35.0
 const MAX_BALL_SPEED := 950.0
 
-var p1_y := 393.0
-var p2_y := 393.0
-var ball_pos := Vector2(640, 393)
+# Geometry from the real visible rect -- see Field.gd. Both paddles sit the
+# same distance from their own screen edge; previously P1's was flush to the
+# left edge while P2's floated ~170px inside the right one (GAME_AUDIT.md C4).
+var field_top := 0.0
+var field_bottom := 0.0
+var p1_x := 0.0
+var p2_x := 0.0
+
+var p1_y := 0.0
+var p2_y := 0.0
+var ball_pos := Vector2.ZERO
 var ball_vel := Vector2.ZERO
 var ball_squash := Vector2.ONE
 var p1_score := 0
@@ -30,6 +36,14 @@ func _init() -> void:
 	match_duration = 0.0
 
 func setup(_config: Dictionary) -> void:
+	field_top = Field.top()
+	field_bottom = Field.bottom()
+	p1_x = Field.left() + PADDLE_MARGIN
+	p2_x = Field.right() - PADDLE_MARGIN
+	p1_y = Field.center().y
+	p2_y = Field.center().y
+	ball_pos = Field.center()
+
 	set_process(false)
 	InputManager.player_pressed.connect(_on_touch)
 	InputManager.player_dragged.connect(_on_drag)
@@ -46,7 +60,7 @@ func _on_drag(player: int, _zone: int, position: Vector2, _delta: Vector2) -> vo
 	_move_paddle(player, position.y)
 
 func _move_paddle(player: int, y: float) -> void:
-	var clamped_y: float = clamp(y, FIELD_TOP + PADDLE_HEIGHT * 0.5, FIELD_BOTTOM - PADDLE_HEIGHT * 0.5)
+	var clamped_y: float = clamp(y, field_top + PADDLE_HEIGHT * 0.5, field_bottom - PADDLE_HEIGHT * 0.5)
 	if player == 1:
 		p1_y = clamped_y
 	else:
@@ -57,39 +71,42 @@ func _process(delta: float) -> void:
 	if not _match_active:
 		return
 
+	var prev_x := ball_pos.x
 	ball_pos += ball_vel * delta
 
-	if ball_pos.y - BALL_RADIUS < FIELD_TOP:
-		ball_pos.y = FIELD_TOP + BALL_RADIUS
+	if ball_pos.y - BALL_RADIUS < field_top:
+		ball_pos.y = field_top + BALL_RADIUS
 		ball_vel.y = abs(ball_vel.y)
 		ball_squash = Vector2(1.4, 0.6)
-	elif ball_pos.y + BALL_RADIUS > FIELD_BOTTOM:
-		ball_pos.y = FIELD_BOTTOM - BALL_RADIUS
+	elif ball_pos.y + BALL_RADIUS > field_bottom:
+		ball_pos.y = field_bottom - BALL_RADIUS
 		ball_vel.y = -abs(ball_vel.y)
 		ball_squash = Vector2(1.4, 0.6)
 
-	_try_paddle_bounce()
+	_try_paddle_bounce(prev_x)
 	ball_squash = Juice.decay_squash(ball_squash, delta)
 
-	if ball_pos.x < 0.0:
+	if ball_pos.x < Field.left() - BALL_RADIUS:
 		_score(2)
-	elif ball_pos.x > 1280.0:
+	elif ball_pos.x > Field.right() + BALL_RADIUS:
 		_score(1)
 
 	queue_redraw()
 
-func _try_paddle_bounce() -> void:
-	var p1_x := PADDLE_MARGIN
-	var p2_x := 1280.0 - PADDLE_MARGIN
+## Swept along the ball's travel this frame rather than tested at its current
+## position: at max rally speed on a 30fps device (the stated performance
+## floor) the ball moves ~32px per frame against a ~41px hit window, which is
+## too little margin to rely on (GAME_AUDIT.md L2).
+func _try_paddle_bounce(prev_x: float) -> void:
+	var p1_face := p1_x + PADDLE_WIDTH * 0.5 + BALL_RADIUS
+	var p2_face := p2_x - PADDLE_WIDTH * 0.5 - BALL_RADIUS
 
-	if ball_vel.x < 0.0 and ball_pos.x - BALL_RADIUS <= p1_x + PADDLE_WIDTH * 0.5 \
-			and ball_pos.x > p1_x - PADDLE_WIDTH:
+	if ball_vel.x < 0.0 and prev_x >= p1_face and ball_pos.x <= p1_face:
 		if absf(ball_pos.y - p1_y) <= PADDLE_HEIGHT * 0.5 + BALL_RADIUS:
-			_bounce_off_paddle(p1_x + PADDLE_WIDTH * 0.5 + BALL_RADIUS, p1_y, 1)
-	elif ball_vel.x > 0.0 and ball_pos.x + BALL_RADIUS >= p2_x - PADDLE_WIDTH * 0.5 \
-			and ball_pos.x < p2_x + PADDLE_WIDTH:
+			_bounce_off_paddle(p1_face, p1_y, 1)
+	elif ball_vel.x > 0.0 and prev_x <= p2_face and ball_pos.x >= p2_face:
 		if absf(ball_pos.y - p2_y) <= PADDLE_HEIGHT * 0.5 + BALL_RADIUS:
-			_bounce_off_paddle(p2_x - PADDLE_WIDTH * 0.5 - BALL_RADIUS, p2_y, -1)
+			_bounce_off_paddle(p2_face, p2_y, -1)
 
 func _bounce_off_paddle(clamp_x: float, paddle_y: float, direction: int) -> void:
 	ball_pos.x = clamp_x
@@ -122,12 +139,28 @@ func _score(scoring_player: int) -> void:
 		_match_active = true
 
 func _serve(towards: int) -> void:
-	ball_pos = Vector2(640, 393)
+	ball_pos = Field.center()
 	_rally_speed = BASE_BALL_SPEED
 	var dir := 1.0 if towards == 2 else -1.0
 	ball_vel = Vector2(dir * BASE_BALL_SPEED, randf_range(-150.0, 150.0))
 
 func _draw() -> void:
-	Juice.cartoon_rect(self, Rect2(PADDLE_MARGIN - PADDLE_WIDTH * 0.5, p1_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_1)
-	Juice.cartoon_rect(self, Rect2(1280.0 - PADDLE_MARGIN - PADDLE_WIDTH * 0.5, p2_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_2)
+	_draw_table()
+	Juice.cartoon_rect(self, Rect2(p1_x - PADDLE_WIDTH * 0.5, p1_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_1)
+	Juice.cartoon_rect(self, Rect2(p2_x - PADDLE_WIDTH * 0.5, p2_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_2)
 	Juice.cartoon_circle(self, ball_pos, BALL_RADIUS, Palette.INK, ball_squash)
+
+## Table surface, border and a dashed net -- the play area was previously an
+## undifferentiated rectangle with nothing to read position against.
+func _draw_table() -> void:
+	var table := Rect2(Field.left(), field_top, Field.right() - Field.left(), field_bottom - field_top)
+	draw_rect(table, Palette.SURFACE)
+
+	var mid := Field.mid_x()
+	var dash := 18.0
+	var y := field_top + 6.0
+	while y < field_bottom:
+		draw_line(Vector2(mid, y), Vector2(mid, minf(y + dash, field_bottom)), Color(Palette.INK, 0.22), 4.0)
+		y += dash * 2.0
+
+	draw_rect(table, Palette.INK, false, 4.0)

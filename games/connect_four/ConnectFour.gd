@@ -6,8 +6,11 @@ extends MiniGame
 const COLS := 7
 const ROWS := 6
 const CELL := 78.0
-const ORIGIN := Vector2(367, 220)
 const DIRECTIONS := [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(1, -1)]
+
+## Centred on the real visible rect rather than a hardcoded design box, so the
+## board sits in the middle of the actual screen -- see Field.gd.
+var origin := Vector2.ZERO
 
 ## board[col] is a bottom-to-top stack of player ints for that column.
 var board: Array = []
@@ -32,9 +35,18 @@ func _init() -> void:
 	match_duration = 0.0
 
 func setup(_config: Dictionary) -> void:
+	origin = Field.center() - Vector2(COLS * CELL * 0.5, ROWS * CELL * 0.5)
+	# Shared board straddling the midline -- ownership follows the turn, not
+	# the screen half, or each player can only reach the columns on their own
+	# side (GAME_AUDIT.md C3).
+	InputManager.set_shared_board_turn(current_turn)
 	set_process(true)
 	_reset_board()
 	InputManager.player_pressed.connect(_on_touch)
+
+func _set_turn(player: int) -> void:
+	current_turn = player
+	InputManager.set_shared_board_turn(player)
 
 func _process(delta: float) -> void:
 	if _falling.is_empty():
@@ -64,7 +76,7 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 	if player != current_turn:
 		return
 
-	var col := int((position.x - ORIGIN.x) / CELL)
+	var col := int((position.x - origin.x) / CELL)
 	if col < 0 or col >= COLS:
 		return
 	if board[col].size() >= ROWS:
@@ -74,9 +86,9 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 	var landed_row: int = ROWS - board[col].size()
 	var key := "%d_%d" % [col, landed_row]
 	_falling[key] = {
-		"y": ORIGIN.y - CELL * 0.5,
+		"y": origin.y - CELL * 0.5,
 		"vel": 0.0,
-		"target": ORIGIN.y + landed_row * CELL + CELL * 0.5,
+		"target": origin.y + landed_row * CELL + CELL * 0.5,
 		"player": player,
 		"col": col,
 	}
@@ -85,7 +97,6 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 	else:
 		p2_pieces += 1
 	AudioManager.play_sfx("drop", player)
-	score_updated.emit(p1_pieces, p2_pieces)
 	queue_redraw() # redraw immediately -- the branches below may await before resolving
 
 	var winner := _check_winner()
@@ -97,7 +108,7 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 		_turn_locked = true
 		_finish_after_delay(0, 0.8)
 	else:
-		current_turn = 2 if current_turn == 1 else 1
+		_set_turn(2 if current_turn == 1 else 1)
 
 func _finish_after_delay(winner: int, delay: float) -> void:
 	await get_tree().create_timer(delay).timeout
@@ -142,22 +153,32 @@ func _reset_board() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_rect(Rect2(ORIGIN, Vector2(COLS * CELL, ROWS * CELL)), Palette.PLAYER_2.lerp(Palette.INK, 0.7), false, 4)
+	var board_rect := Rect2(origin, Vector2(COLS * CELL, ROWS * CELL))
+
+	# A solid slab with holes punched in it -- the shape Connect Four is
+	# actually recognised by. Previously the board had no fill at all, so
+	# cream holes sat on the cream background at near-zero contrast and read
+	# as floating dots rather than a board (GAME_AUDIT.md M3).
+	var slab := Palette.PLAYER_2.lerp(Palette.INK, 0.45)
+	draw_rect(board_rect.grow(10.0), Palette.INK)
+	draw_rect(board_rect.grow(6.0), slab)
+
 	for row in range(ROWS):
 		for col in range(COLS):
+			var center: Vector2 = origin + Vector2(col * CELL + CELL * 0.5, row * CELL + CELL * 0.5)
 			if _falling.has("%d_%d" % [col, row]):
-				continue # drawn separately below, mid-drop
-			var center: Vector2 = ORIGIN + Vector2(col * CELL + CELL * 0.5, row * CELL + CELL * 0.5)
+				# Hole only -- the token is drawn separately below, mid-drop.
+				draw_circle(center, CELL * 0.4, Palette.BACKGROUND)
+				continue
 			var v := _get_cell(row, col)
 			if v == 0:
-				draw_circle(center, CELL * 0.4, Palette.SURFACE)
+				draw_circle(center, CELL * 0.4, Palette.BACKGROUND)
 			else:
 				Juice.cartoon_circle(self, center, CELL * 0.36, Palette.for_player(v))
 
 	for key in _falling.keys():
 		var f: Dictionary = _falling[key]
-		var center: Vector2 = ORIGIN + Vector2(f.col * CELL + CELL * 0.5, f.y)
+		var center: Vector2 = origin + Vector2(f.col * CELL + CELL * 0.5, f.y)
 		Juice.cartoon_circle(self, center, CELL * 0.36, Palette.for_player(f.player))
 
-	var turn_color := Palette.for_player(current_turn)
-	draw_rect(Rect2(ORIGIN.x, ORIGIN.y - 30, COLS * CELL, 12), turn_color)
+	TurnBanner.draw_turn(self, Vector2(origin.x + COLS * CELL * 0.5, origin.y - 44.0), current_turn)

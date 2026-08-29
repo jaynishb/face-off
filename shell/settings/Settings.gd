@@ -16,12 +16,12 @@ func _ready() -> void:
 
 	var title := UIUtil.make_label("SETTINGS", 40)
 	title.position = Vector2(0, 24)
-	title.size = Vector2(1280, 60)
+	title.size = Vector2(Field.width(), 60)
 	add_child(title)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 20)
-	vbox.position = Vector2(440, 140)
+	vbox.position = Vector2(Field.mid_x() - 200, 140)
 	vbox.size = Vector2(400, 400)
 	add_child(vbox)
 

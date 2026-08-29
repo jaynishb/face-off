@@ -30,19 +30,19 @@ func _ready() -> void:
 	# the control (caught by an actual HTML5 export run -- see CLAUDE.md).
 	var title := UIUtil.make_label("FACE OFF", 68)
 	title.position = Vector2(0, 44)
-	title.size = Vector2(1280, 90)
+	title.size = Vector2(Field.width(), 90)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
 	UIUtil.pop_in(title, 0.0)
 
 	var subtitle := UIUtil.make_label("Two players. One phone. No wifi.", 22)
 	subtitle.position = Vector2(0, 128)
-	subtitle.size = Vector2(1280, 40)
+	subtitle.size = Vector2(Field.width(), 40)
 	add_child(subtitle)
 
 	var play_btn := UIUtil.make_button("PLAY", 40, Palette.SUCCESS)
 	play_btn.custom_minimum_size = Vector2(420, 120)
-	play_btn.position = Vector2(640 - 210, 210)
+	play_btn.position = Vector2(Field.mid_x() - 210, 210)
 	play_btn.pressed.connect(_on_play_pressed)
 	add_child(play_btn)
 	UIUtil.pop_in(play_btn, 0.1)
@@ -51,13 +51,13 @@ func _ready() -> void:
 		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22
 	)
 	remove_ads_btn.custom_minimum_size = Vector2(280, 64)
-	remove_ads_btn.position = Vector2(640 - 140, 356)
+	remove_ads_btn.position = Vector2(Field.mid_x() - 140, 356)
 	remove_ads_btn.disabled = SaveManager.ad_free
 	remove_ads_btn.pressed.connect(_on_remove_ads_pressed)
 	add_child(remove_ads_btn)
 
-	_p1_mascot = _build_mascot("res://shared/art/mascot_p1.svg", Vector2(640 - 220, 515), false)
-	_p2_mascot = _build_mascot("res://shared/art/mascot_p2.svg", Vector2(640 + 70, 515), true)
+	_p1_mascot = _build_mascot("res://shared/art/mascot_p1.svg", Vector2(Field.mid_x() - 220, 515), false)
+	_p2_mascot = _build_mascot("res://shared/art/mascot_p2.svg", Vector2(Field.mid_x() + 70, 515), true)
 	UIUtil.idle_float(_p1_mascot, 10.0, 1.6, 0.0)
 	UIUtil.idle_float(_p2_mascot, 10.0, 1.6, 0.3)
 

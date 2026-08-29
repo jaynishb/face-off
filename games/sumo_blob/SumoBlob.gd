@@ -4,7 +4,6 @@ extends MiniGame
 ## the round to force a resolution. Best of 3. Manual circle-physics with a
 ## simple procedural squash-and-stretch (no external art needed for the feel).
 
-const PLATFORM_CENTER := Vector2(640, 393)
 const RADIUS_START := 300.0
 const RADIUS_END := 120.0
 const SHRINK_DURATION := 30.0
@@ -15,11 +14,12 @@ const FRICTION := 3.0
 const ROUNDS_TO_WIN := 2
 const SQUASH_RECOVERY := 8.0
 
+var platform_center := Vector2.ZERO # from the real visible rect -- see Field.gd
 var platform_radius := RADIUS_START
 var elapsed := 0.0
 
-var p1_pos := PLATFORM_CENTER + Vector2(-150, 0)
-var p2_pos := PLATFORM_CENTER + Vector2(150, 0)
+var p1_pos := Vector2.ZERO
+var p2_pos := Vector2.ZERO
 var p1_vel := Vector2.ZERO
 var p2_vel := Vector2.ZERO
 var p1_squash := Vector2.ONE
@@ -48,6 +48,7 @@ func _init() -> void:
 	match_duration = 0.0
 
 func setup(_config: Dictionary) -> void:
+	platform_center = Field.center()
 	set_process(false)
 	_reset_round()
 	InputManager.player_pressed.connect(_on_touch)
@@ -64,7 +65,7 @@ func _on_touch(player: int, _zone: int, _position: Vector2) -> void:
 		return
 
 	var pos: Vector2 = p1_pos if player == 1 else p2_pos
-	var dir := (PLATFORM_CENTER - pos).normalized()
+	var dir := (platform_center - pos).normalized()
 	if dir == Vector2.ZERO:
 		dir = Vector2.RIGHT if player == 1 else Vector2.LEFT
 
@@ -104,8 +105,8 @@ func _process(delta: float) -> void:
 	p1_squash = p1_squash.lerp(Vector2.ONE, recovery)
 	p2_squash = p2_squash.lerp(Vector2.ONE, recovery)
 
-	var p1_out := p1_pos.distance_to(PLATFORM_CENTER) > platform_radius
-	var p2_out := p2_pos.distance_to(PLATFORM_CENTER) > platform_radius
+	var p1_out := p1_pos.distance_to(platform_center) > platform_radius
+	var p2_out := p2_pos.distance_to(platform_center) > platform_radius
 	if p1_out or p2_out:
 		_round_locked = true
 		var round_winner := 0
@@ -170,8 +171,8 @@ func _resolve_round(round_winner: int) -> void:
 func _reset_round() -> void:
 	platform_radius = RADIUS_START
 	elapsed = 0.0
-	p1_pos = PLATFORM_CENTER + Vector2(-150, 0)
-	p2_pos = PLATFORM_CENTER + Vector2(150, 0)
+	p1_pos = platform_center + Vector2(-150, 0)
+	p2_pos = platform_center + Vector2(150, 0)
 	p1_vel = Vector2.ZERO
 	p2_vel = Vector2.ZERO
 	p1_squash = Vector2.ONE
@@ -181,13 +182,55 @@ func _reset_round() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_circle(PLATFORM_CENTER, platform_radius, Palette.ACCENT.lerp(Palette.SURFACE, 0.3))
-	draw_arc(PLATFORM_CENTER, platform_radius, 0.0, TAU, 48, Palette.INK, 4.0)
-	_draw_blob(p1_pos, p1_squash, Palette.PLAYER_1)
-	_draw_blob(p2_pos, p2_squash, Palette.PLAYER_2)
+	# Platform: soft drop shadow, mat, inner ring, then the ink rim -- so the
+	# arena reads as a raised dohyo rather than a flat disc.
+	draw_circle(platform_center + Vector2(0, 10), platform_radius, Color(Palette.INK, 0.12))
+	draw_circle(platform_center, platform_radius, Palette.ACCENT.lerp(Palette.SURFACE, 0.25))
+	draw_arc(platform_center, platform_radius * 0.82, 0.0, TAU, 48, Color(Palette.INK, 0.16), 3.0)
+	draw_arc(platform_center, platform_radius, 0.0, TAU, 48, Palette.INK, 5.0)
 
-func _draw_blob(pos: Vector2, squash: Vector2, color: Color) -> void:
+	# Face the blobs toward each other so they read as opponents.
+	_draw_blob(p1_pos, p1_squash, Palette.PLAYER_1, 1.0 if p1_pos.x < p2_pos.x else -1.0)
+	_draw_blob(p2_pos, p2_squash, Palette.PLAYER_2, 1.0 if p2_pos.x < p1_pos.x else -1.0)
+
+## The blobs are the game's mascot, drawn procedurally so they can squash and
+## stretch with the physics -- a static sprite can't. Body, blush, eyes with
+## pupils that lean into the direction of travel, and a mouth. Previously these
+## were flat untextured circles in a game called Sumo Blob (GAME_AUDIT.md M2).
+func _draw_blob(pos: Vector2, squash: Vector2, color: Color, facing: float) -> void:
+	var rx := BLOB_RADIUS * squash.x
+	var ry := BLOB_RADIUS * squash.y
+
+	var shadow := PackedVector2Array()
+	for p in _unit_pts:
+		shadow.append(pos + Vector2(p.x * (rx + 4.0), p.y * (ry + 4.0)))
+	draw_colored_polygon(shadow, Palette.INK)
+
 	var pts := PackedVector2Array()
 	for p in _unit_pts:
-		pts.append(pos + Vector2(p.x * BLOB_RADIUS * squash.x, p.y * BLOB_RADIUS * squash.y))
+		pts.append(pos + Vector2(p.x * rx, p.y * ry))
 	draw_colored_polygon(pts, color)
+
+	# Soft highlight, top-left.
+	var hi := PackedVector2Array()
+	for p in _unit_pts:
+		hi.append(pos + Vector2(-rx * 0.34, -ry * 0.36) + Vector2(p.x * rx * 0.26, p.y * ry * 0.26))
+	draw_colored_polygon(hi, Color(1, 1, 1, 0.34))
+
+	var eye_dx := rx * 0.30
+	var eye_y := pos.y - ry * 0.12
+	var eye_r := maxf(rx * 0.20, 4.0)
+	for side in [-1.0, 1.0]:
+		var eye_c := Vector2(pos.x + side * eye_dx, eye_y)
+		draw_circle(eye_c, eye_r, Palette.SURFACE)
+		draw_circle(eye_c + Vector2(facing * eye_r * 0.32, 0.0), eye_r * 0.52, Palette.INK)
+
+	# Blush + a small determined mouth.
+	var blush := Color(1, 1, 1, 0.28)
+	draw_circle(Vector2(pos.x - rx * 0.56, pos.y + ry * 0.16), rx * 0.13, blush)
+	draw_circle(Vector2(pos.x + rx * 0.56, pos.y + ry * 0.16), rx * 0.13, blush)
+	draw_line(
+		Vector2(pos.x - rx * 0.16, pos.y + ry * 0.40),
+		Vector2(pos.x + rx * 0.16, pos.y + ry * 0.40),
+		Palette.INK, maxf(rx * 0.09, 2.0),
+	)
