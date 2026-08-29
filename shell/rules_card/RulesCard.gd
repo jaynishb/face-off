@@ -58,12 +58,12 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 	rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(rules_label)
 
-	var got_it := UIUtil.make_button("GOT IT!  ▶", 26, Palette.SUCCESS)
+	var got_it := UIUtil.make_button("GOT IT!", 26, Palette.SUCCESS)
 	got_it.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	got_it.pressed.connect(_on_dismiss)
 	vbox.add_child(got_it)
 
-	var close_btn := UIUtil.make_button("✕", 22, Palette.SURFACE)
+	var close_btn := UIUtil.make_button("X", 22, Palette.SURFACE)
 	close_btn.custom_minimum_size = Vector2(56, 56)
 	close_btn.position = Vector2(1280 - 80, 24)
 	close_btn.pressed.connect(_on_dismiss)

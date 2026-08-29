@@ -5,8 +5,9 @@ extends Control
 
 func _ready() -> void:
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
+	AudioManager.play_menu_music()
 
-	var back_btn := UIUtil.make_button("←", 28, Palette.SURFACE)
+	var back_btn := UIUtil.make_button("<", 28, Palette.SURFACE)
 	back_btn.custom_minimum_size = Vector2(64, 64)
 	back_btn.position = Vector2(24, 24)
 	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))

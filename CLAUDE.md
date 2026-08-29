@@ -156,10 +156,11 @@ Sumo Blob is implemented: manual circle-physics blobs on a platform that shrinks
 **All 6 launch games are now implemented and registered** — `GameSelect` no longer shows any "SOON" tile for the launch roster.
 
 What Day 4 explicitly asked for that is **not** done, and can't be done from this environment:
-- **Real audio.** `AudioManager._sfx_library` is empty — `play_sfx()` calls throughout the games (`"paddle_hit"`, `"goal"`, `"dash"`, `"blob_impact"`, `"fall"`, etc.) are already wired at every correct moment, but they no-op until actual `AudioStream` assets (with P1/P2 pitch-shifted variants) are registered into that dictionary. Same for the menu music loop. This needs an audio tool/library this session doesn't have.
 - **Real-hardware multi-touch verification** — still the single most important unresolved item from Day 1, and nothing since has changed that.
 
-**Outstanding overall:** the audio asset production above, then Day 5 (AdMob SDK binding via the actual Godot AdMob plugin, platform IAP via the Android IAP plugin/StoreKit, store listing screenshots/video, signed builds, submission) — see PRD §9. `AdManager`'s placement/frequency-cap *logic* is already real and enforced; only the SDK call itself is a stub.
+(Audio was also listed here as impossible; it since turned out not to be — see "Audio pass" below.)
+
+**Outstanding overall:** Day 5 (AdMob SDK binding via the actual Godot AdMob plugin, platform IAP via the Android IAP plugin/StoreKit, store listing screenshots/video, signed builds, submission) — see PRD §9. `AdManager`'s placement/frequency-cap *logic* is already real and enforced; only the SDK call itself is a stub.
 
 ## Art & polish pass (visual — done without an art tool)
 
@@ -172,7 +173,27 @@ There's no image-generation tool in this environment, so "real sprites" means ha
 - **Tic-Tac-Toe pieces** now pop in with a back-out overshoot scale animation on placement instead of appearing instantly.
 - `UIUtil` gained `pop_in()` (scale-in with overshoot, used for menu title/PLAY button and Game Select tiles on load) and `idle_wobble()`/`idle_float()` (looping, staggerable via a `delay` param so multiple instances don't move in lockstep).
 
-None of this required new engine features — it's all `_draw()`/`Tween`/`CPUParticles2D`, which is why it was reachable without an art pipeline. Real audio is a materially different problem (needs actual sound assets, not just more code) and remains the one Day 4 item still undone.
+None of this required new engine features — it's all `_draw()`/`Tween`/`CPUParticles2D`, which is why it was reachable without an art pipeline.
+
+## Audio pass — correction to "real audio can't be done here"
+
+Every status section above claimed real audio needed "an audio tool/library this session doesn't have." That was wrong for the same reason the "no Godot binary" claim was wrong: a WAV file is just a header plus PCM samples, and Python's stdlib `wave` module writes one with no third-party dependency at all. There is now a full SFX set and a menu music loop, synthesized from scratch.
+
+- **`shared/audio/sfx/*.wav`** — 13 events (`countdown_tick`, `countdown_go`, `paddle_hit`, `drop`, `tap`, `place`, `blob_impact`, `dash`, `fall`, `goal`, `score`, `win`, `round_win`), each built from simple oscillators (sine/square/triangle/noise) with a linear-attack + exponential-decay envelope; scoring/win cues are short arpeggios up a C-major triad rather than a single tone, so a win reads as celebratory and not just "another blip."
+- **`shared/audio/music/menu_loop.wav`** — a bouncy ~118bpm C-pentatonic melody over a slower triangle-wave bass, mixed and peak-normalized. Menu-only, per the PRD's hard "no music during matches" rule.
+- **`AudioManager`** now loads every file named in `SFX_EVENTS` from `SFX_DIR` at `_ready()` (guarded by `ResourceLoader.exists()`, so a missing file degrades to the old silent no-op rather than crashing). The PRD's P1/P2 differentiation is done with `pitch_scale` at playback time, not two separate files per event — `play_sfx(event, player)` was already passing the player index everywhere, so this needed no call-site changes.
+- `play_menu_music()` now defaults to the bundled loop (no argument needed) and no-ops if music is already playing, so navigating menu → select → settings doesn't restart the track on every scene change. `MatchHost._ready()` calls `stop_music()`, which is what actually enforces "no music during a match."
+
+The generator script is not checked in — the `.wav` files are the artifact. If the sounds ever need regenerating, the approach is just `wave` + `struct` + `math` from the stdlib.
+
+**Glyph coverage cleanup (same root cause as the emoji-tofu bug).** The art pass fixed emoji on game tiles but left the same bug in button labels — `▶ PLAY`, `⚙`, `←`, `✕`, `⏸`, `☰ MENU`, `🔄 REMATCH`, `★ REMOVE ADS`, `Ads Removed ✓` all drew a tofu box for the symbol because the default theme font has no glyph for any of them. All of these are now plain ASCII (`PLAY`, `SET`, `<`, `X`, `II`, `MENU`, `REMATCH`, `REMOVE ADS`, `ADS REMOVED`). **Rule for this project: no non-ASCII in any user-facing string until a font with real glyph coverage is bundled** — comments and docs are fine, `Label`/`Button` text is not.
+
+## Mobile web layout + in-match exit
+
+- **Portrait phones.** The web build previously rendered as a small sideways strip on a portrait phone. The obvious fix — CSS-rotating `#canvas` 90° — was implemented, tested, and **rejected**: Godot's web input reads pointer position from the canvas's post-transform `getBoundingClientRect()` and maps it onto the untransformed pixel buffer, so a rotated canvas scrambles every tap coordinate. That is the *exact* "no controls" bug class already fixed once in this project, and the rotation reintroduced it (verified: taps on a rotated canvas hit nothing). **Do not CSS-transform the Godot canvas.** Instead, the export preset's `html/head_include` adds a full-screen `#rotate-prompt` overlay shown via `@media (orientation: portrait)` asking the player to turn the phone — appropriate since the game is landscape-locked by design anyway. In landscape the canvas fills the viewport with no transform, and touch mapping is untouched.
+- **`export_presets.cfg` is gitignored** (it will carry local signing paths once Day 5's Android preset exists), but the Web preset now holds real, non-local configuration — the whole mobile layout fix lives in its `html/head_include`. So **`export_presets.example.cfg` is tracked** as the source of truth for the Web preset: copy it to `export_presets.cfg` in a fresh clone before exporting, and mirror any Web-preset change back into it. Losing this file silently reverts the portrait handling with no compile error to warn you.
+- The head include also sets a proper mobile viewport meta (`user-scalable=no`, `viewport-fit=cover`) and `overscroll-behavior: none`, so a stray drag doesn't pan or pull-to-refresh the page mid-match.
+- **In-match exit.** `MatchHost` now has a dedicated `X` button in the score bar, next to pause, opening an "Exit this match?" confirm with EXIT TO MENU / KEEP PLAYING. Previously the only way out mid-match was to discover it hidden behind Pause — fine on Android with a hardware back button, a dead end on the web build. It is `Palette.PLAYER_1`, deliberately not `SURFACE`: the score bar behind it is already `SURFACE`, which rendered the button invisible.
 
 ## Day 5 status
 

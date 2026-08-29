@@ -10,9 +10,20 @@ var _sfx_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 
 ## SFX registered per event name, each with distinct P1/P2 pitch-shifted
-## variants so players can hear whose action registered.
-## event_name -> { p1: AudioStream, p2: AudioStream } (populated as audio assets land)
+## variants so players can hear whose action registered. Procedurally
+## synthesized (no audio tool in this environment -- see CLAUDE.md); a single
+## stream per event is enough since P1/P2 differentiation happens via
+## pitch_scale at playback time, not via separate files.
+## event_name -> { p1: AudioStream }
 var _sfx_library: Dictionary = {}
+
+const SFX_DIR := "res://shared/audio/sfx/"
+const MENU_MUSIC := "res://shared/audio/music/menu_loop.wav"
+
+const SFX_EVENTS := [
+	"countdown_tick", "countdown_go", "paddle_hit", "drop", "tap", "place",
+	"blob_impact", "dash", "fall", "goal", "score", "win", "round_win",
+]
 
 const P1_PITCH := 1.0
 const P2_PITCH := 1.12
@@ -30,7 +41,14 @@ func _ready() -> void:
 	_music_player.finished.connect(func(): _music_player.play())
 	add_child(_music_player)
 
+	_load_sfx_library()
 	_apply_mute_state()
+
+func _load_sfx_library() -> void:
+	for event_name in SFX_EVENTS:
+		var path := "%s%s.wav" % [SFX_DIR, event_name]
+		if ResourceLoader.exists(path):
+			_sfx_library[event_name] = {"p1": load(path)}
 
 ## The project ships no custom audio bus layout, so SFX/Music don't exist
 ## until created here -- caught by actually running the project (see
@@ -56,10 +74,12 @@ func play_sfx(event_name: String, player: int = 0) -> void:
 	_sfx_player.stream = stream
 	_sfx_player.play()
 
-func play_menu_music(stream: AudioStream) -> void:
+func play_menu_music(stream: AudioStream = null) -> void:
 	if not SaveManager.music_enabled:
 		return
-	_music_player.stream = stream
+	if _music_player.playing:
+		return
+	_music_player.stream = stream if stream else load(MENU_MUSIC)
 	_music_player.play()
 
 func stop_music() -> void:

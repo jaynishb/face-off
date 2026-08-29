@@ -6,8 +6,9 @@ const VERSION := "0.1.0-dev"
 
 func _ready() -> void:
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
+	AudioManager.play_menu_music()
 
-	var back_btn := UIUtil.make_button("←", 28, Palette.SURFACE)
+	var back_btn := UIUtil.make_button("<", 28, Palette.SURFACE)
 	back_btn.custom_minimum_size = Vector2(64, 64)
 	back_btn.position = Vector2(24, 24)
 	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
@@ -29,7 +30,7 @@ func _ready() -> void:
 	vbox.add_child(_make_toggle_row("Haptics", SaveManager.haptics_enabled, func(v): SaveManager.set_haptics_enabled(v)))
 
 	var ads_btn := UIUtil.make_button(
-		"Ads Removed ✓" if SaveManager.ad_free else "★ REMOVE ADS", 22
+		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22
 	)
 	ads_btn.disabled = SaveManager.ad_free
 	ads_btn.pressed.connect(func():

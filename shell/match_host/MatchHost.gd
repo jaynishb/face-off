@@ -21,6 +21,7 @@ func _ready() -> void:
 	# controls" -- see CLAUDE.md.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
+	AudioManager.stop_music() # never music during a match -- see CLAUDE.md
 
 	var game_id: String = GameManager.pending_game_id
 	_game = GameManager.load_game(game_id)
@@ -62,7 +63,15 @@ func _build_score_bar() -> void:
 	_p2_score_label.position = Vector2(1280 - 24 - 100, 16)
 	bar.add_child(_p2_score_label)
 
-	var pause_btn := UIUtil.make_button("⏸", 24, Palette.ACCENT)
+	# Not SURFACE -- the score bar behind it is already SURFACE, so a SURFACE
+	# button is invisible against it.
+	var exit_btn := UIUtil.make_button("X", 22, Palette.PLAYER_1)
+	exit_btn.custom_minimum_size = Vector2(48, 48)
+	exit_btn.position = Vector2(640 - 24 - 56, 8)
+	exit_btn.pressed.connect(_on_exit_pressed)
+	bar.add_child(exit_btn)
+
+	var pause_btn := UIUtil.make_button("II", 22, Palette.ACCENT)
 	pause_btn.custom_minimum_size = Vector2(48, 48)
 	pause_btn.position = Vector2(640 - 24, 8)
 	pause_btn.pressed.connect(_on_pause_pressed)
@@ -93,13 +102,13 @@ func _on_pause_pressed() -> void:
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_paused_overlay.add_child(dim)
 
-	var resume_btn := UIUtil.make_button("▶ RESUME", 28, Palette.SUCCESS)
+	var resume_btn := UIUtil.make_button("RESUME", 28, Palette.SUCCESS)
 	resume_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	resume_btn.position = Vector2(640 - 140, 300)
 	resume_btn.pressed.connect(_on_resume_pressed)
 	_paused_overlay.add_child(resume_btn)
 
-	var menu_btn := UIUtil.make_button("☰ MENU", 24, Palette.SURFACE)
+	var menu_btn := UIUtil.make_button("MENU", 24, Palette.SURFACE)
 	menu_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	menu_btn.position = Vector2(640 - 140, 420)
 	menu_btn.pressed.connect(func():
@@ -107,6 +116,44 @@ func _on_pause_pressed() -> void:
 		get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn")
 	)
 	_paused_overlay.add_child(menu_btn)
+
+## A dedicated, always-visible exit -- separate from Pause -- so a player on
+## the web build (no OS back button to rely on) has one direct tap to bail
+## out of a match instead of having to discover it's hidden behind Pause.
+func _on_exit_pressed() -> void:
+	if _paused_overlay:
+		return
+	get_tree().paused = true
+	_paused_overlay = CanvasLayer.new()
+	_paused_overlay.layer = 45
+	add_child(_paused_overlay)
+
+	var dim := ColorRect.new()
+	dim.color = Color(Palette.INK, 0.5)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_paused_overlay.add_child(dim)
+
+	var prompt := UIUtil.make_label("Exit this match?", 32)
+	prompt.position = Vector2(0, 240)
+	prompt.size = Vector2(1280, 50)
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt.process_mode = Node.PROCESS_MODE_ALWAYS
+	_paused_overlay.add_child(prompt)
+
+	var confirm_btn := UIUtil.make_button("EXIT TO MENU", 24, Palette.PLAYER_1)
+	confirm_btn.process_mode = Node.PROCESS_MODE_ALWAYS
+	confirm_btn.position = Vector2(640 - 140, 320)
+	confirm_btn.pressed.connect(func():
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn")
+	)
+	_paused_overlay.add_child(confirm_btn)
+
+	var cancel_btn := UIUtil.make_button("KEEP PLAYING", 24, Palette.SUCCESS)
+	cancel_btn.process_mode = Node.PROCESS_MODE_ALWAYS
+	cancel_btn.position = Vector2(640 - 140, 440)
+	cancel_btn.pressed.connect(_on_resume_pressed)
+	_paused_overlay.add_child(cancel_btn)
 
 func _on_resume_pressed() -> void:
 	get_tree().paused = false

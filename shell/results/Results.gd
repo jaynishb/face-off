@@ -5,6 +5,7 @@ extends Control
 
 func _ready() -> void:
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
+	AudioManager.play_menu_music()
 
 	var winner: int = GameManager.last_winner
 	var title_text := "DRAW!" if winner == 0 else "PLAYER %d WINS!" % winner
@@ -23,13 +24,13 @@ func _ready() -> void:
 	tally_label.size = Vector2(1280, 40)
 	add_child(tally_label)
 
-	var rematch_btn := UIUtil.make_button("🔄 REMATCH", 40, Palette.SUCCESS)
+	var rematch_btn := UIUtil.make_button("REMATCH", 40, Palette.SUCCESS)
 	rematch_btn.custom_minimum_size = Vector2(440, 140)
 	rematch_btn.position = Vector2(640 - 460, 420)
 	rematch_btn.pressed.connect(_on_rematch_pressed)
 	add_child(rematch_btn)
 
-	var menu_btn := UIUtil.make_button("☰ MENU", 32, Palette.SURFACE)
+	var menu_btn := UIUtil.make_button("MENU", 32, Palette.SURFACE)
 	menu_btn.custom_minimum_size = Vector2(280, 100)
 	menu_btn.position = Vector2(640 + 40, 440)
 	menu_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))

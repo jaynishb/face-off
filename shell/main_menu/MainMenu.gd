@@ -12,8 +12,12 @@ var _p2_mascot: TextureRect
 func _ready() -> void:
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 	GameManager.clear_session_tally()
+	AudioManager.play_menu_music()
 
-	var settings_btn := UIUtil.make_button("⚙", 28, Palette.SURFACE)
+	# Plain ASCII text, not a symbol glyph -- the default engine font has no
+	# coverage for gear/emoji codepoints and silently draws a tofu box
+	# instead (same class of bug fixed for game-tile emoji; see CLAUDE.md).
+	var settings_btn := UIUtil.make_button("SET", 20, Palette.SURFACE)
 	settings_btn.custom_minimum_size = Vector2(64, 64)
 	settings_btn.position = Vector2(24, 24)
 	settings_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/settings/Settings.tscn"))
@@ -36,7 +40,7 @@ func _ready() -> void:
 	subtitle.size = Vector2(1280, 40)
 	add_child(subtitle)
 
-	var play_btn := UIUtil.make_button("▶  PLAY", 40, Palette.SUCCESS)
+	var play_btn := UIUtil.make_button("PLAY", 40, Palette.SUCCESS)
 	play_btn.custom_minimum_size = Vector2(420, 120)
 	play_btn.position = Vector2(640 - 210, 210)
 	play_btn.pressed.connect(_on_play_pressed)
@@ -44,7 +48,7 @@ func _ready() -> void:
 	UIUtil.pop_in(play_btn, 0.1)
 
 	var remove_ads_btn := UIUtil.make_button(
-		"Ads Removed ✓" if SaveManager.ad_free else "★ REMOVE ADS", 22
+		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22
 	)
 	remove_ads_btn.custom_minimum_size = Vector2(280, 64)
 	remove_ads_btn.position = Vector2(640 - 140, 356)
