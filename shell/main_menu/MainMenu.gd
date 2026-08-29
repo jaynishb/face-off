@@ -12,22 +12,24 @@ func _ready() -> void:
 	settings_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/settings/Settings.tscn"))
 	add_child(settings_btn)
 
+	# NOTE: these controls rely on default (top-left) anchors with an absolute
+	# .position -- do NOT add set_anchors_preset() here. Godot computes a
+	# non-full-rect anchor's offset additively with .position, so combining
+	# e.g. PRESET_CENTER with a hand-computed absolute position double-offsets
+	# the control (caught by an actual HTML5 export run -- see CLAUDE.md).
 	var title := UIUtil.make_label("FACE OFF", 72)
-	title.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	title.position = Vector2(0, 90)
 	title.size = Vector2(1280, 100)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
 
 	var subtitle := UIUtil.make_label("Two players. One phone. No wifi.", 22)
-	subtitle.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	subtitle.position = Vector2(0, 180)
 	subtitle.size = Vector2(1280, 40)
 	add_child(subtitle)
 
 	var play_btn := UIUtil.make_button("▶  PLAY", 40, Palette.SUCCESS)
 	play_btn.custom_minimum_size = Vector2(420, 120)
-	play_btn.set_anchors_preset(Control.PRESET_CENTER)
 	play_btn.position = Vector2(640 - 210, 360 - 60)
 	play_btn.pressed.connect(_on_play_pressed)
 	add_child(play_btn)

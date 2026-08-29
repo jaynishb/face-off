@@ -26,7 +26,6 @@ func show_rules(display_name: String, rules_text: String) -> void:
 	style.set_content_margin_all(32)
 	card.add_theme_stylebox_override("panel", style)
 	card.custom_minimum_size = Vector2(640, 420)
-	card.set_anchors_preset(Control.PRESET_CENTER)
 	card.position = Vector2(640 - 320, 360 - 210)
 	add_child(card)
 

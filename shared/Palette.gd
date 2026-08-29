@@ -1,4 +1,5 @@
 extends Node
+class_name Palette
 ## Palette — the fixed color system. Every game and shell scene should pull
 ## colors from here rather than hardcoding hex values, so the system stays
 ## consistent if a shade ever needs tuning.

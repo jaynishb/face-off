@@ -180,6 +180,30 @@ Everything Day 5 that's pure text/code is done:
 
 In short: the app's game logic and shell are code-complete for all 6 launch games (Days 1–4), and the Day 5 paperwork that doesn't require a device or the Godot editor is done. What remains — SDK integration, IAP, real assets, signing, submission — needs a human with a Godot editor, an Android device, and store console access.
 
+## Engine verification (HTML5/Web export) — correction to earlier day logs
+
+Every status section above says "no Godot binary in this environment" — that assumption was wrong wherever the session has network access. Godot 4.3 stable can be fetched directly:
+
+```
+curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
+curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
+# unzip templates.tpz's templates/ dir to ~/.local/share/godot/export_templates/4.3.stable/
+godot --headless --path . --import                       # validates the whole project, prints every parse/scene error
+godot --headless --path . --export-debug "Web" build/web/index.html   # needs an export_presets.cfg with a "Web" preset
+```
+
+Running this for the first time immediately caught three real bugs that had been sitting unverified since Day 1–2 (see git history for the exact fix commit):
+
+1. **`shared/Palette.gd` was missing `class_name Palette`.** Every script that referenced `Palette.*` failed to compile. Caught by `--import`.
+2. **`AudioManager` referenced "SFX"/"Music" audio buses that don't exist** — the project has no custom bus layout, so `AudioServer.get_bus_index()` returned -1 and `set_bus_mute()` threw. Fixed by having `AudioManager._ready()` create the buses at runtime if missing (`_ensure_bus()`).
+3. **A real Control layout bug**: combining a non-full-rect `anchors_preset` (e.g. `PRESET_CENTER`, `PRESET_CENTER_TOP`) with a subsequently hand-computed absolute `.position` double-offsets the control — Godot adds `.position` on top of the anchor's own offset rather than treating it as the final absolute position. This silently misplaced the main menu's title/subtitle/PLAY button, GameSelect's/Settings'/Results' titles, and the rules card panel — all rendered off in a corner instead of centered. Fix: don't call `set_anchors_preset()` on a control that also gets a hand-computed absolute `.position` — leave it at the default top-left anchor, where `.position` behaves as plain pixel coordinates. (A `set_anchors_preset()` call with **no** subsequent manual `.position` — e.g. every `PRESET_FULL_RECT` background — is unaffected and still correct.)
+
+None of these three were catchable by reading the code — they only surfaced by actually running Godot. Confirmed via a `--headless --path . --import` full reimport (zero errors) and a Playwright/headless-Chromium smoke test of the exported Web build that clicked through Main Menu → Game Select → Rules Card → a live Air Hockey match, simulating a paddle drag that produced a real, correctly-scored goal.
+
+**Practical implication for multi-touch verification**: the HTML5/Web export is a much more reachable way to test real multi-touch than the native Android build — `project.godot` already has `input_devices/pointing/emulate_touch_from_mouse=true`, and a real phone's browser generates genuine `TouchEvent`s against the exact same `InputManager` code path a native build would use. Export with the Web preset, host the `build/web/` output somewhere reachable (e.g. GitHub Pages), and open it on two real fingers on an actual phone screen — this can satisfy the PRD's Day 1 hardware-touch exit criterion without needing a signed native build at all.
+
+**Still true and unchanged:** no native Android/iOS export has been attempted (needs the Android SDK/NDK, Gradle, and signing keys for a real `.aab`, well beyond a Web export), and nobody has yet actually run two fingers on a real phone against this build.
+
 ## Reference
 
 Full product spec, personas, wireframes, store listing copy, and success metrics: `FACE_OFF_PRD.md`.

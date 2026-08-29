@@ -18,6 +18,9 @@ const P1_PITCH := 1.0
 const P2_PITCH := 1.12
 
 func _ready() -> void:
+	_ensure_bus(SFX_BUS)
+	_ensure_bus(MUSIC_BUS)
+
 	_sfx_player = AudioStreamPlayer.new()
 	_sfx_player.bus = SFX_BUS
 	add_child(_sfx_player)
@@ -28,6 +31,15 @@ func _ready() -> void:
 	add_child(_music_player)
 
 	_apply_mute_state()
+
+## The project ships no custom audio bus layout, so SFX/Music don't exist
+## until created here -- caught by actually running the project (see
+## CLAUDE.md); AudioServer.get_bus_index() silently returns -1 otherwise,
+## which set_bus_mute() then rejects.
+func _ensure_bus(bus_name: String) -> void:
+	if AudioServer.get_bus_index(bus_name) == -1:
+		AudioServer.add_bus()
+		AudioServer.set_bus_name(AudioServer.bus_count - 1, bus_name)
 
 func _apply_mute_state() -> void:
 	AudioServer.set_bus_mute(AudioServer.get_bus_index(SFX_BUS), not SaveManager.sfx_enabled)

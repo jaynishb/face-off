@@ -11,7 +11,6 @@ func _ready() -> void:
 	var title_color := Palette.ACCENT if winner == 0 else Palette.for_player(winner)
 
 	var title := UIUtil.make_label(title_text, 56, title_color)
-	title.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	title.position = Vector2(0, 100)
 	title.size = Vector2(1280, 80)
 	add_child(title)
@@ -20,7 +19,6 @@ func _ready() -> void:
 	var tally_label := UIUtil.make_label(
 		"Today:  P1 %d — %d P2" % [tally.get("p1_wins", 0), tally.get("p2_wins", 0)], 26
 	)
-	tally_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	tally_label.position = Vector2(0, 220)
 	tally_label.size = Vector2(1280, 40)
 	add_child(tally_label)

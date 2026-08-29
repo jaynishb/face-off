@@ -13,7 +13,6 @@ func _ready() -> void:
 	add_child(back_btn)
 
 	var title := UIUtil.make_label("CHOOSE A GAME", 40)
-	title.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	title.position = Vector2(0, 24)
 	title.size = Vector2(1280, 60)
 	add_child(title)
