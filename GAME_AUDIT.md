@@ -8,7 +8,27 @@
 
 ---
 
-## Verdict
+---
+
+## Status update — all findings fixed (commit `1bb01c3`)
+
+Everything below has been addressed and re-verified by the same two-player touch harness. What changed:
+
+- **C1/C2** — new `Field` autoload is the single source of truth for playfield geometry. `InputManager`, `MatchHost`, all six games and every shell screen lay out against the real visible rect, so the drawn divider and the ownership split cannot drift apart, and nothing sits flush-left any more.
+- **C3** — `InputManager.set_shared_board_turn()` adds a shared-board mode: Tic-Tac-Toe and Connect Four credit a touch to whoever's turn it is rather than to a screen half. **The Tic-Tac-Toe softlock is gone** — re-tested by playing a full round out to a scored win.
+- **C4** — Ping Pong paddles now sit the same distance from their own edge, the ball scores at the real edge, and the paddle collision is swept rather than positional (also closes L2).
+- **C5** — Air Hockey has real goal mouths with solid wall either side, a drawn rink (border, centre line, centre circle), and velocity-aware hits so a fast swipe smashes (also closes L3).
+- **H1** — Tap Race draws its two tap zones, flashing on tap and highlighting the one to hit next, which teaches the alternate-don't-mash mechanic by showing it.
+- **H2** — Tap Race reports percent complete; Connect Four no longer reports piece counts as a score.
+- **H3** — new shared `TurnBanner` pairs colour with a shape marker and plain text.
+- **M1–M3** — cartoon car for the Tap Race racers, mascot faces (eyes, pupils that lean into travel, blush, mouth) on the Sumo Blob blobs, and a filled slab-with-holes Connect Four board.
+- **L1/L4** — a drawn Tic-Tac-Toe round says so on screen and alternates who opens the replay; the dead `emoji` registry field is removed.
+
+Still open: **M4 partially** (Air Hockey and Ping Pong now have framing; no other game needed it) and **M5** (mascot art still appears only on the main menu and in Sumo Blob, not on Results or Game Select).
+
+---
+
+## Verdict (as originally found)
 
 **3 of the 6 games are currently unshippable**, and one of them (**Tic-Tac-Toe**) hard-softlocks on any modern phone. All three failures trace to a **single root cause**: the input system splits the screen at a different place than the renderer draws it, and every game's layout is hardcoded to a 1280×720 design box that no real phone actually is.
 

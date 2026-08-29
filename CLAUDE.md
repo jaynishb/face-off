@@ -242,6 +242,24 @@ Re-verified properly this time using real touch events (Chrome DevTools Protocol
 
 **Still true and unchanged:** no native Android/iOS export has been attempted (needs the Android SDK/NDK, Gradle, and signing keys for a real `.aab`, well beyond a Web export). Real-hardware confirmation now exists for the Web build's control scheme; native input handling (same `InputManager` code, but a different platform input backend) is still unconfirmed on a device.
 
+## Playtest audit pass — the coordinate-space bug that broke three games
+
+`GAME_AUDIT.md` is the full report (two-player playthrough of all 6 games with real CDP touch events). The headline finding, and the rule that came out of it:
+
+**`InputManager` used to split players at `get_visible_rect().x/2` while everything drawn used a hardcoded `640`.** `project.godot` sets `window/stretch/aspect="expand"`, so the visible *design* rect is wider than 1280 on any screen wider than 16:9 — every modern phone. At a 19.5:9 viewport the rect is 1558 design px, putting the input split at x≈779 against a divider drawn at 638. Consequences, all confirmed on screen, not inferred:
+
+- A ~9% strip of Player 2's visible half fed Player 1's paddle.
+- All content sat ~76px left of centre with dead space on the right.
+- **Tic-Tac-Toe softlocked outright**: all nine cells resolved to P1, so after P1's opening move P2 could never place anywhere and the match could not be finished. Connect Four was similarly broken (P1 reached columns 0–4, P2 only 5–6).
+
+**Rule: never hardcode 1280/720/640 in layout or input code.** `autoload/Field.gd` is the single source of truth for playfield geometry (`mid_x()`, `left()`, `right()`, `top()`, `bottom()`, `center()`, `half_center()`), and `InputManager` splits on `Field.mid_x()` — the same value `MatchHost` draws its divider at. Anything that needs to know where the screen is asks `Field`. `expand` was kept deliberately over switching to `keep`, which would have fixed the split by throwing away ~20% of a tall phone's screen to letterboxing.
+
+**Shared-board games are a different input model.** Tic-Tac-Toe and Connect Four play on one communal board straddling the midline, so screen-half ownership is simply wrong for them — it makes the far side of the board unreachable. `InputManager.set_shared_board_turn(player)` credits every touch to whoever's turn it is; `MatchHost` resets it to 0 before each match so the mode never leaks between games.
+
+Also landed in this pass: real Air Hockey goal mouths (the whole end line used to score) with a drawn rink and velocity-aware hits; symmetric Ping Pong paddles with a swept collision; visible Tap Race tap zones (the rules card referred to two buttons that were never drawn) with a cartoon car replacing the flat-circle racer; mascot faces on the Sumo Blob blobs; a filled Connect Four board; and a shared `TurnBanner` pairing colour with a shape marker and text, per the accessibility rule.
+
+**Verification lesson, restated because it keeps mattering:** check the thing input is supposed to move — paddle position, piece placement — never just the score. The playtest harness lives in `/tmp/pt` (not checked in); it drives `Input.dispatchTouchEvent` through CDP, including genuinely simultaneous two-finger input.
+
 ## Reference
 
 Full product spec, personas, wireframes, store listing copy, and success metrics: `FACE_OFF_PRD.md`.
