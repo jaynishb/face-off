@@ -18,6 +18,7 @@ var p1_pos := Vector2(320, 393)
 var p2_pos := Vector2(960, 393)
 var puck_pos := Vector2(MID_X, 393)
 var puck_vel := Vector2.ZERO
+var puck_squash := Vector2.ONE
 var p1_score := 0
 var p2_score := 0
 var _match_active := false
@@ -64,12 +65,16 @@ func _process(delta: float) -> void:
 	if puck_pos.y - PUCK_RADIUS < FIELD_TOP:
 		puck_pos.y = FIELD_TOP + PUCK_RADIUS
 		puck_vel.y = abs(puck_vel.y)
+		puck_squash = Vector2(1.3, 0.7)
 	elif puck_pos.y + PUCK_RADIUS > FIELD_BOTTOM:
 		puck_pos.y = FIELD_BOTTOM - PUCK_RADIUS
 		puck_vel.y = -abs(puck_vel.y)
+		puck_squash = Vector2(1.3, 0.7)
 
 	_resolve_paddle_collision(p1_pos)
 	_resolve_paddle_collision(p2_pos)
+
+	puck_squash = Juice.decay_squash(puck_squash, delta)
 
 	if puck_pos.x < FIELD_LEFT - PUCK_RADIUS * 2.0:
 		_score(2)
@@ -87,6 +92,7 @@ func _resolve_paddle_collision(paddle_pos: Vector2) -> void:
 		puck_pos = paddle_pos + normal * min_dist
 		var speed: float = max(puck_vel.length(), MIN_HIT_SPEED)
 		puck_vel = (normal * speed * 1.15).limit_length(MAX_PUCK_SPEED)
+		puck_squash = Vector2(1.5, 0.6)
 		AudioManager.play_sfx("paddle_hit")
 
 func _score(scoring_player: int) -> void:
@@ -97,6 +103,7 @@ func _score(scoring_player: int) -> void:
 		p2_score += 1
 	score_updated.emit(p1_score, p2_score)
 	AudioManager.play_sfx("goal", scoring_player)
+	Juice.burst(self, puck_pos, Palette.for_player(scoring_player))
 
 	if p1_score >= WIN_SCORE or p2_score >= WIN_SCORE:
 		var winner := 1 if p1_score > p2_score else 2
@@ -112,6 +119,6 @@ func _reset_puck(serve_towards: int) -> void:
 	puck_vel = Vector2(dir * 320.0, randf_range(-150.0, 150.0))
 
 func _draw() -> void:
-	draw_circle(p1_pos, PADDLE_RADIUS, Palette.PLAYER_1)
-	draw_circle(p2_pos, PADDLE_RADIUS, Palette.PLAYER_2)
-	draw_circle(puck_pos, PUCK_RADIUS, Palette.INK)
+	Juice.cartoon_circle(self, p1_pos, PADDLE_RADIUS, Palette.PLAYER_1)
+	Juice.cartoon_circle(self, p2_pos, PADDLE_RADIUS, Palette.PLAYER_2)
+	Juice.cartoon_circle(self, puck_pos, PUCK_RADIUS, Palette.INK, puck_squash)

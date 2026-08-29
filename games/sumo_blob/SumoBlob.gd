@@ -111,10 +111,14 @@ func _process(delta: float) -> void:
 		var round_winner := 0
 		if p1_out and p2_out:
 			round_winner = 0 # simultaneous fall -- replay the round, no score
+			Juice.burst(self, p1_pos, Palette.PLAYER_1)
+			Juice.burst(self, p2_pos, Palette.PLAYER_2)
 		elif p1_out:
 			round_winner = 2
+			Juice.burst(self, p1_pos, Palette.PLAYER_1)
 		else:
 			round_winner = 1
+			Juice.burst(self, p2_pos, Palette.PLAYER_2)
 		_resolve_round(round_winner)
 
 	queue_redraw()

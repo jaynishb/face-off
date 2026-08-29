@@ -156,12 +156,23 @@ Sumo Blob is implemented: manual circle-physics blobs on a platform that shrinks
 **All 6 launch games are now implemented and registered** — `GameSelect` no longer shows any "SOON" tile for the launch roster.
 
 What Day 4 explicitly asked for that is **not** done, and can't be done from this environment:
-- **Final sprites / real art.** Every game currently draws itself procedurally (`_draw()` with primitive shapes) using `Palette` colors — no illustrated blob/paddle/puck/car art exists. This needs an artist or an art-generation tool this session doesn't have.
-- **Real audio.** `AudioManager._sfx_library` is empty — `play_sfx()` calls throughout the games (`"paddle_hit"`, `"goal"`, `"dash"`, `"blob_impact"`, `"fall"`, etc.) are already wired at every correct moment, but they no-op until actual `AudioStream` assets (with P1/P2 pitch-shifted variants) are registered into that dictionary. Same for the menu music loop.
-- **Particle pops** on impact events — no particle system wired yet.
+- **Real audio.** `AudioManager._sfx_library` is empty — `play_sfx()` calls throughout the games (`"paddle_hit"`, `"goal"`, `"dash"`, `"blob_impact"`, `"fall"`, etc.) are already wired at every correct moment, but they no-op until actual `AudioStream` assets (with P1/P2 pitch-shifted variants) are registered into that dictionary. Same for the menu music loop. This needs an audio tool/library this session doesn't have.
 - **Real-hardware multi-touch verification** — still the single most important unresolved item from Day 1, and nothing since has changed that.
 
-**Outstanding overall:** the art/audio asset production above, then Day 5 (AdMob SDK binding via the actual Godot AdMob plugin, platform IAP via the Android IAP plugin/StoreKit, store listing assets, signed builds, submission) — see PRD §9. `AdManager`'s placement/frequency-cap *logic* is already real and enforced; only the SDK call itself is a stub. None of this repo has been opened in the Godot editor (no Godot binary in this environment).
+**Outstanding overall:** the audio asset production above, then Day 5 (AdMob SDK binding via the actual Godot AdMob plugin, platform IAP via the Android IAP plugin/StoreKit, store listing screenshots/video, signed builds, submission) — see PRD §9. `AdManager`'s placement/frequency-cap *logic* is already real and enforced; only the SDK call itself is a stub.
+
+## Art & polish pass (visual — done without an art tool)
+
+There's no image-generation tool in this environment, so "real sprites" means hand-authored vector art rather than commissioned/generated bitmaps. That turned out to be enough to replace every flat-shape placeholder:
+
+- **`shared/art/mascot_p1.svg` / `mascot_p2.svg`** — the cute blob mascot from the PRD's Main Menu wireframe, hand-built as SVG (big eyes, blush, stub arms/legs, thick ink outline, single soft drop shadow — matches the palette's stated art direction). `MainMenu.gd` places both, mirrored via negative `scale.x` on the P2 instance so they face each other, each with an independent looping idle float (`UIUtil.idle_float`) and a hop/squash reaction (`_react_mascots()`) when PLAY is pressed.
+- **`shared/art/icons/*.svg`** — one small vector icon per launch game, replacing the emoji labels that rendered as blank tofu boxes (the default Godot theme font has no emoji glyph coverage — a real, if minor, correctness bug fixed as part of this pass, not just cosmetic). Used on `GameSelect` tiles (with a per-tile idle wobble, staggered so tiles don't move in lockstep) and inside `RulesCard`'s diagram slot (replacing the literal "[diagram]" placeholder text), where it idle-floats.
+- **`shared/Juice.gd`** — shared Node2D-space helpers for game rendering: `cartoon_circle()`/`cartoon_rect()` draw a thick ink outline + flat fill + soft highlight instead of a flat primitive (used by Air Hockey's puck/paddles, Ping Pong's ball/paddles, Connect Four's tokens); `burst()` spawns a one-shot `CPUParticles2D` confetto burst (Air Hockey goals, Ping Pong points, Sumo Blob eliminations); `decay_squash()` is the shared squash-stretch decay math, now applied to Air Hockey's puck and Ping Pong's ball on every wall/paddle hit (previously only Sumo Blob had this).
+- **Connect Four's token-drop bounce animation** — flagged as deferred back on Day 3 — is now implemented (`_falling` dict in `ConnectFour.gd`, simple gravity + damped bounce, drawn separately from the settled grid so a piece visibly falls and bounces into place instead of appearing instantly).
+- **Tic-Tac-Toe pieces** now pop in with a back-out overshoot scale animation on placement instead of appearing instantly.
+- `UIUtil` gained `pop_in()` (scale-in with overshoot, used for menu title/PLAY button and Game Select tiles on load) and `idle_wobble()`/`idle_float()` (looping, staggerable via a `delay` param so multiple instances don't move in lockstep).
+
+None of this required new engine features — it's all `_draw()`/`Tween`/`CPUParticles2D`, which is why it was reachable without an art pipeline. Real audio is a materially different problem (needs actual sound assets, not just more code) and remains the one Day 4 item still undone.
 
 ## Day 5 status
 

@@ -13,11 +13,13 @@ signal dismissed
 func _ready() -> void:
 	layer = 60
 
-func show_rules(display_name: String, rules_text: String) -> void:
+func show_rules(display_name: String, rules_text: String, icon_path: String = "") -> void:
 	var dim := ColorRect.new()
-	dim.color = Color(Palette.INK, 0.45)
+	dim.color = Color(Palette.INK, 0.0)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
+	var dim_tween := dim.create_tween()
+	dim_tween.tween_property(dim, "color", Color(Palette.INK, 0.45), 0.2)
 
 	var card := PanelContainer.new()
 	var style := StyleBoxFlat.new()
@@ -28,6 +30,7 @@ func show_rules(display_name: String, rules_text: String) -> void:
 	card.custom_minimum_size = Vector2(640, 420)
 	card.position = Vector2(640 - 320, 360 - 210)
 	add_child(card)
+	UIUtil.pop_in(card, 0.05)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 20)
@@ -40,10 +43,16 @@ func show_rules(display_name: String, rules_text: String) -> void:
 	diagram.color = Palette.BACKGROUND
 	diagram.custom_minimum_size = Vector2(0, 140)
 	vbox.add_child(diagram)
-	var diagram_hint := UIUtil.make_label("[diagram]", 16, Palette.INK)
-	diagram_hint.modulate.a = 0.4
-	diagram.add_child(diagram_hint)
-	diagram_hint.set_anchors_preset(Control.PRESET_CENTER)
+
+	if icon_path != "" and ResourceLoader.exists(icon_path):
+		var icon := TextureRect.new()
+		icon.texture = load(icon_path)
+		icon.custom_minimum_size = Vector2(96, 96)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.pivot_offset = Vector2(48, 48)
+		diagram.add_child(icon)
+		icon.set_anchors_preset(Control.PRESET_CENTER) # no manual .position alongside this -- see CLAUDE.md
+		UIUtil.idle_float(icon, 6.0, 1.1)
 
 	var rules_label := UIUtil.make_label(rules_text, 22)
 	rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD

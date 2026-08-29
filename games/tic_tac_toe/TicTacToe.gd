@@ -14,6 +14,7 @@ const WIN_LINES := [
 ]
 
 var board: Array = []
+var piece_scale: Array = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 var current_turn := 1
 var p1_rounds := 0
 var p2_rounds := 0
@@ -50,6 +51,7 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 
 	board[idx] = player
 	AudioManager.play_sfx("place", player)
+	_pop_piece(idx)
 
 	var winner := _check_winner()
 	if winner != 0:
@@ -98,7 +100,15 @@ func _round_draw() -> void:
 
 func _reset_board() -> void:
 	board = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+	piece_scale = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 	queue_redraw()
+
+## Pop-in scale animation (overshoot) on the just-placed piece for feedback.
+func _pop_piece(idx: int) -> void:
+	piece_scale[idx] = 0.0
+	var t := create_tween()
+	t.tween_method(func(v: float): piece_scale[idx] = v; queue_redraw(), 0.0, 1.0, 0.25) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _draw() -> void:
 	for i in range(1, 3):
@@ -114,11 +124,13 @@ func _draw() -> void:
 		var col := idx % 3
 		var center: Vector2 = GRID_ORIGIN + Vector2(col * CELL + CELL * 0.5, row * CELL + CELL * 0.5)
 		var color := Palette.for_player(v)
+		var s: float = piece_scale[idx]
 		if v == 1:
-			draw_line(center + Vector2(-40, -40), center + Vector2(40, 40), color, 10)
-			draw_line(center + Vector2(-40, 40), center + Vector2(40, -40), color, 10)
+			var d: float = 40.0 * s
+			draw_line(center + Vector2(-d, -d), center + Vector2(d, d), color, 10)
+			draw_line(center + Vector2(-d, d), center + Vector2(d, -d), color, 10)
 		else:
-			draw_arc(center, 45, 0, TAU, 32, color, 10)
+			draw_arc(center, 45.0 * s, 0, TAU, 32, color, 10)
 
 	var turn_color := Palette.for_player(current_turn)
 	draw_rect(Rect2(GRID_ORIGIN.x, GRID_ORIGIN.y - 30, 3 * CELL, 12), turn_color)

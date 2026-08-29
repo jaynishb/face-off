@@ -17,6 +17,7 @@ var p1_y := 393.0
 var p2_y := 393.0
 var ball_pos := Vector2(640, 393)
 var ball_vel := Vector2.ZERO
+var ball_squash := Vector2.ONE
 var p1_score := 0
 var p2_score := 0
 var _match_active := false
@@ -61,11 +62,14 @@ func _process(delta: float) -> void:
 	if ball_pos.y - BALL_RADIUS < FIELD_TOP:
 		ball_pos.y = FIELD_TOP + BALL_RADIUS
 		ball_vel.y = abs(ball_vel.y)
+		ball_squash = Vector2(1.4, 0.6)
 	elif ball_pos.y + BALL_RADIUS > FIELD_BOTTOM:
 		ball_pos.y = FIELD_BOTTOM - BALL_RADIUS
 		ball_vel.y = -abs(ball_vel.y)
+		ball_squash = Vector2(1.4, 0.6)
 
 	_try_paddle_bounce()
+	ball_squash = Juice.decay_squash(ball_squash, delta)
 
 	if ball_pos.x < 0.0:
 		_score(2)
@@ -96,6 +100,7 @@ func _bounce_off_paddle(clamp_x: float, paddle_y: float, direction: int) -> void
 	var y_component := offset * _rally_speed * 0.6
 	var x_component: float = sqrt(max(_rally_speed * _rally_speed - y_component * y_component, 0.0))
 	ball_vel = Vector2(x_component * direction, y_component)
+	ball_squash = Vector2(0.6, 1.4)
 	AudioManager.play_sfx("paddle_hit", 1 if direction < 0 else 2)
 
 func _score(scoring_player: int) -> void:
@@ -106,6 +111,7 @@ func _score(scoring_player: int) -> void:
 		p2_score += 1
 	score_updated.emit(p1_score, p2_score)
 	AudioManager.play_sfx("score", scoring_player)
+	Juice.burst(self, ball_pos, Palette.for_player(scoring_player))
 
 	if p1_score >= WIN_SCORE or p2_score >= WIN_SCORE:
 		var winner := 1 if p1_score > p2_score else 2
@@ -122,6 +128,6 @@ func _serve(towards: int) -> void:
 	ball_vel = Vector2(dir * BASE_BALL_SPEED, randf_range(-150.0, 150.0))
 
 func _draw() -> void:
-	draw_rect(Rect2(PADDLE_MARGIN - PADDLE_WIDTH * 0.5, p1_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_1)
-	draw_rect(Rect2(1280.0 - PADDLE_MARGIN - PADDLE_WIDTH * 0.5, p2_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_2)
-	draw_circle(ball_pos, BALL_RADIUS, Palette.INK)
+	Juice.cartoon_rect(self, Rect2(PADDLE_MARGIN - PADDLE_WIDTH * 0.5, p1_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_1)
+	Juice.cartoon_rect(self, Rect2(1280.0 - PADDLE_MARGIN - PADDLE_WIDTH * 0.5, p2_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_2)
+	Juice.cartoon_circle(self, ball_pos, BALL_RADIUS, Palette.INK, ball_squash)

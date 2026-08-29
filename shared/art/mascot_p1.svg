@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="240" viewBox="0 0 220 240">
+  <!-- soft shadow -->
+  <ellipse cx="110" cy="222" rx="62" ry="11" fill="#1D2B36" opacity="0.15"/>
+
+  <!-- stubby arms -->
+  <ellipse cx="24" cy="132" rx="17" ry="12" fill="#FF5A5F" stroke="#1D2B36" stroke-width="6"/>
+  <ellipse cx="196" cy="132" rx="17" ry="12" fill="#FF5A5F" stroke="#1D2B36" stroke-width="6"/>
+
+  <!-- feet -->
+  <ellipse cx="80" cy="208" rx="21" ry="13" fill="#FF5A5F" stroke="#1D2B36" stroke-width="6"/>
+  <ellipse cx="140" cy="208" rx="21" ry="13" fill="#FF5A5F" stroke="#1D2B36" stroke-width="6"/>
+
+  <!-- body -->
+  <ellipse cx="110" cy="118" rx="92" ry="86" fill="#FF5A5F" stroke="#1D2B36" stroke-width="7"/>
+
+  <!-- cheeks -->
+  <circle cx="58" cy="140" r="14" fill="#FFC857" opacity="0.55"/>
+  <circle cx="162" cy="140" r="14" fill="#FFC857" opacity="0.55"/>
+
+  <!-- eyes -->
+  <ellipse cx="80" cy="102" rx="19" ry="23" fill="#FFFDF7" stroke="#1D2B36" stroke-width="5"/>
+  <ellipse cx="140" cy="102" rx="19" ry="23" fill="#FFFDF7" stroke="#1D2B36" stroke-width="5"/>
+  <circle cx="86" cy="107" r="9" fill="#1D2B36"/>
+  <circle cx="146" cy="107" r="9" fill="#1D2B36"/>
+  <circle cx="89" cy="103" r="3" fill="#FFFDF7"/>
+  <circle cx="149" cy="103" r="3" fill="#FFFDF7"/>
+
+  <!-- smile -->
+  <path d="M 82 148 Q 110 172 138 148" fill="none" stroke="#1D2B36" stroke-width="7" stroke-linecap="round"/>
+</svg>

@@ -17,6 +17,14 @@ var p2_pieces := 0
 var _match_active := false
 var _turn_locked := false
 
+## "col_row" -> { y, vel, target, player }. A cell being animated here is
+## skipped by the static grid draw and drawn separately mid-drop, per the
+## PRD's "animate the token drop with a bounce" note (deferred at Day 3).
+var _falling: Dictionary = {}
+const GRAVITY := 2600.0
+const BOUNCE_DAMPING := 0.35
+const SETTLE_VELOCITY := 40.0
+
 func _init() -> void:
 	game_id = "connect_four"
 	display_name = "Connect Four"
@@ -24,8 +32,28 @@ func _init() -> void:
 	match_duration = 0.0
 
 func setup(_config: Dictionary) -> void:
+	set_process(true)
 	_reset_board()
 	InputManager.player_pressed.connect(_on_touch)
+
+func _process(delta: float) -> void:
+	if _falling.is_empty():
+		return
+	var settled_keys := []
+	for key in _falling.keys():
+		var f: Dictionary = _falling[key]
+		f.vel += GRAVITY * delta
+		f.y += f.vel * delta
+		if f.y >= f.target:
+			f.y = f.target
+			if absf(f.vel) < SETTLE_VELOCITY:
+				settled_keys.append(key)
+			else:
+				f.vel = -f.vel * BOUNCE_DAMPING
+		_falling[key] = f
+	for key in settled_keys:
+		_falling.erase(key)
+	queue_redraw()
 
 func start_match() -> void:
 	_match_active = true
@@ -43,6 +71,15 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 		return # column full
 
 	board[col].append(player)
+	var landed_row: int = ROWS - board[col].size()
+	var key := "%d_%d" % [col, landed_row]
+	_falling[key] = {
+		"y": ORIGIN.y - CELL * 0.5,
+		"vel": 0.0,
+		"target": ORIGIN.y + landed_row * CELL + CELL * 0.5,
+		"player": player,
+		"col": col,
+	}
 	if player == 1:
 		p1_pieces += 1
 	else:
@@ -58,7 +95,7 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 		_finish_after_delay(winner, 0.8)
 	elif _board_full():
 		_turn_locked = true
-		_finish_after_delay(0, 0.5)
+		_finish_after_delay(0, 0.8)
 	else:
 		current_turn = 2 if current_turn == 1 else 1
 
@@ -108,10 +145,19 @@ func _draw() -> void:
 	draw_rect(Rect2(ORIGIN, Vector2(COLS * CELL, ROWS * CELL)), Palette.PLAYER_2.lerp(Palette.INK, 0.7), false, 4)
 	for row in range(ROWS):
 		for col in range(COLS):
+			if _falling.has("%d_%d" % [col, row]):
+				continue # drawn separately below, mid-drop
 			var center: Vector2 = ORIGIN + Vector2(col * CELL + CELL * 0.5, row * CELL + CELL * 0.5)
 			var v := _get_cell(row, col)
-			var color := Palette.SURFACE if v == 0 else Palette.for_player(v)
-			draw_circle(center, CELL * 0.4, color)
+			if v == 0:
+				draw_circle(center, CELL * 0.4, Palette.SURFACE)
+			else:
+				Juice.cartoon_circle(self, center, CELL * 0.36, Palette.for_player(v))
+
+	for key in _falling.keys():
+		var f: Dictionary = _falling[key]
+		var center: Vector2 = ORIGIN + Vector2(f.col * CELL + CELL * 0.5, f.y)
+		Juice.cartoon_circle(self, center, CELL * 0.36, Palette.for_player(f.player))
 
 	var turn_color := Palette.for_player(current_turn)
 	draw_rect(Rect2(ORIGIN.x, ORIGIN.y - 30, COLS * CELL, 12), turn_color)

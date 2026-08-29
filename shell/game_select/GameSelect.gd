@@ -30,8 +30,12 @@ func _ready() -> void:
 	grid.add_theme_constant_override("v_separation", 24)
 	scroll.add_child(grid)
 
+	var index := 0
 	for game_id in GameManager.get_roster():
-		grid.add_child(_build_tile(game_id))
+		var tile := _build_tile(game_id)
+		grid.add_child(tile)
+		UIUtil.pop_in(tile, index * 0.06)
+		index += 1
 
 func _build_tile(game_id: String) -> Control:
 	var meta := GameManager.get_game_meta(game_id)
@@ -56,8 +60,14 @@ func _build_tile(game_id: String) -> Control:
 	vbox.add_theme_constant_override("separation", 12)
 	tile.add_child(vbox)
 
-	var emoji := UIUtil.make_label(meta.get("emoji", ""), 48)
-	vbox.add_child(emoji)
+	var icon := TextureRect.new()
+	icon.texture = load(meta.get("icon", ""))
+	icon.custom_minimum_size = Vector2(72, 72)
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon.pivot_offset = Vector2(36, 36)
+	vbox.add_child(icon)
+	UIUtil.idle_wobble(icon, randf() * 0.6)
 
 	var name_label := UIUtil.make_label(meta.get("display_name", game_id), 24)
 	vbox.add_child(name_label)
@@ -87,7 +97,7 @@ func _on_tile_pressed(game_id: String) -> void:
 		var card := RulesCard.new()
 		add_child(card)
 		var meta := GameManager.get_game_meta(game_id)
-		card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""))
+		card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""), meta.get("icon", ""))
 		SaveManager.mark_rules_seen(game_id)
 		card.dismissed.connect(func(): _launch(game_id))
 	else:
@@ -97,7 +107,7 @@ func _show_rules(game_id: String) -> void:
 	var card := RulesCard.new()
 	add_child(card)
 	var meta := GameManager.get_game_meta(game_id)
-	card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""))
+	card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""), meta.get("icon", ""))
 
 func _launch(game_id: String) -> void:
 	GameManager.pending_game_id = game_id
