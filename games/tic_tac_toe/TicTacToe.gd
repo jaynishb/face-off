@@ -33,8 +33,12 @@ func _init() -> void:
 	theme_bg = Palette.turn_tint(current_turn)
 	shared_board = true
 
-func setup(_config: Dictionary) -> void:
+func layout() -> void:
 	grid_origin = Field.center() - Vector2(CELL * 1.5, CELL * 1.5)
+	queue_redraw()
+
+func setup(_config: Dictionary) -> void:
+	layout()
 	# One shared board straddling the midline: ownership must follow the turn,
 	# not the screen half, or the far half of the board is unreachable for
 	# whoever is on the wrong side of it (GAME_AUDIT.md C3).

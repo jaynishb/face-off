@@ -45,7 +45,9 @@ func _init() -> void:
 	theme_bg = Palette.BG_AIR_HOCKEY
 	theme_dark = true
 
-func setup(_config: Dictionary) -> void:
+## Rink bounds follow the live viewport. Live pieces are clamped back inside
+## rather than left outside the new rink (see MiniGame.layout).
+func layout() -> void:
 	field_top = Field.top()
 	field_bottom = Field.bottom()
 	field_left = Field.left()
@@ -55,6 +57,16 @@ func setup(_config: Dictionary) -> void:
 	goal_top = goal_center - GOAL_HEIGHT * 0.5
 	goal_bottom = goal_center + GOAL_HEIGHT * 0.5
 
+	_move_paddle(1, p1_pos)
+	_move_paddle(2, p2_pos)
+	_p1_prev = p1_pos
+	_p2_prev = p2_pos
+	puck_pos.x = clampf(puck_pos.x, field_left + PUCK_RADIUS, field_right - PUCK_RADIUS)
+	puck_pos.y = clampf(puck_pos.y, field_top + PUCK_RADIUS, field_bottom - PUCK_RADIUS)
+	queue_redraw()
+
+func setup(_config: Dictionary) -> void:
+	layout()
 	p1_pos = Field.half_center(1)
 	p2_pos = Field.half_center(2)
 	_p1_prev = p1_pos

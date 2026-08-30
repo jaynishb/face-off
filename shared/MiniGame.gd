@@ -39,6 +39,21 @@ signal score_updated(score_p1: int, score_p2: int)
 func setup(_config: Dictionary) -> void:
 	pass
 
+## Compute every position derived from the screen here, not in setup(), and
+## read them from Field rather than any stored size.
+##
+## The shell calls this after setup() AND on every viewport resize. That is not
+## a rare event on the web: a phone browser resizes the canvas whenever its
+## address bar collapses or the orientation settles, which happens *after* the
+## scene has already laid itself out. Geometry computed once in setup() is
+## frozen at first-frame dimensions -- that is what pushed the Player 2 score
+## pill clean off the right edge of a real phone.
+##
+## Implementations must be idempotent: this can be called many times, mid-match,
+## with live pieces on the board.
+func layout() -> void:
+	pass
+
 ## Called by GameManager once the countdown overlay finishes.
 func start_match() -> void:
 	pass

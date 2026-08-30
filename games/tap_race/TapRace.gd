@@ -33,7 +33,11 @@ func _init() -> void:
 	match_duration = 0.0
 	theme_bg = Palette.BG_TAP_RACE
 
-func setup(_config: Dictionary) -> void:
+## Lanes AND the InputManager zone rects are both derived from the viewport,
+## so a resize has to re-register the zones -- stale zone rects would leave the
+## tap buttons drawn in one place and listening in another (see
+## MiniGame.layout).
+func layout() -> void:
 	var top := Field.top()
 	var bottom := Field.bottom()
 	var mid := Field.mid_x()
@@ -54,7 +58,10 @@ func setup(_config: Dictionary) -> void:
 	InputManager.configure_zones(zones)
 	for z in zones:
 		_zone_rects["%d_%d" % [z.player, z.zone]] = z.rect
+	queue_redraw()
 
+func setup(_config: Dictionary) -> void:
+	layout()
 	InputManager.player_pressed.connect(_on_touch)
 	set_process(true)
 

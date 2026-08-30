@@ -36,8 +36,22 @@ func _init() -> void:
 	theme_bg = Palette.turn_tint(current_turn)
 	shared_board = true
 
-func setup(_config: Dictionary) -> void:
+## Board geometry is derived from the live viewport every time it changes --
+## a resize mid-match must move the board, not leave it where the first frame
+## happened to put it (see MiniGame.layout).
+func layout() -> void:
 	origin = Field.center() - Vector2(COLS * CELL * 0.5, ROWS * CELL * 0.5)
+	# In-flight tokens target an absolute y, so retarget them onto the new
+	# board position rather than letting them fall to a stale row.
+	for key in _falling.keys():
+		var f: Dictionary = _falling[key]
+		var landed_row: int = int(key.split("_")[1])
+		f.target = origin.y + landed_row * CELL + CELL * 0.5
+		_falling[key] = f
+	queue_redraw()
+
+func setup(_config: Dictionary) -> void:
+	layout()
 	# Shared board straddling the midline -- ownership follows the turn, not
 	# the screen half, or each player can only reach the columns on their own
 	# side (GAME_AUDIT.md C3).
@@ -187,7 +201,11 @@ func _draw() -> void:
 
 	for key in _falling.keys():
 		var f: Dictionary = _falling[key]
-		var center: Vector2 = origin + Vector2(f.col * CELL + CELL * 0.5, f.y)
+		# f.y is already an absolute viewport coordinate (it is compared against
+		# f.target, which is absolute), so only x is offset by origin. Adding
+		# origin.y here as well double-counted it and drew a token drifting
+		# below the board -- visible as a stray disc off the bottom edge.
+		var center := Vector2(origin.x + f.col * CELL + CELL * 0.5, f.y)
 		Juice.cartoon_circle(self, center, CELL * 0.35, Palette.for_player(f.player), Vector2.ONE, false)
 
 	TurnBanner.draw_turn(self, Vector2(origin.x + COLS * CELL * 0.5, origin.y - 58.0), current_turn)

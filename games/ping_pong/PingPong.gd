@@ -41,16 +41,26 @@ func _init() -> void:
 	match_duration = 0.0
 	theme_bg = Palette.BG_PING_PONG
 
-func setup(_config: Dictionary) -> void:
+## Table bounds follow the live viewport; paddles and ball are clamped back
+## inside it rather than stranded outside (see MiniGame.layout).
+func layout() -> void:
 	field_top = Field.top() + TABLE_INSET * 0.5
 	field_bottom = Field.bottom() - TABLE_INSET * 0.5
 	table_left = Field.left() + TABLE_INSET
 	table_right = Field.right() - TABLE_INSET
 	p1_x = table_left + PADDLE_MARGIN
 	p2_x = table_right - PADDLE_MARGIN
+	_move_paddle(1, p1_y)
+	_move_paddle(2, p2_y)
+	ball_pos.x = clampf(ball_pos.x, table_left + BALL_RADIUS, table_right - BALL_RADIUS)
+	ball_pos.y = clampf(ball_pos.y, field_top + BALL_RADIUS, field_bottom - BALL_RADIUS)
+	queue_redraw()
+
+func setup(_config: Dictionary) -> void:
 	p1_y = Field.center().y
 	p2_y = Field.center().y
 	ball_pos = Field.center()
+	layout()
 
 	set_process(false)
 	InputManager.player_pressed.connect(_on_touch)

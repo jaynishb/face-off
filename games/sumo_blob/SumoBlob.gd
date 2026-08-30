@@ -49,8 +49,20 @@ func _init() -> void:
 	theme_bg = Palette.BG_SUMO
 	theme_dark = true
 
+## The dohyo follows the live viewport; the blobs move with it so their
+## position relative to the platform edge (which is what decides the round) is
+## preserved across a resize (see MiniGame.layout).
+func layout() -> void:
+	var new_center := Field.center()
+	if platform_center != Vector2.ZERO:
+		var delta := new_center - platform_center
+		p1_pos += delta
+		p2_pos += delta
+	platform_center = new_center
+	queue_redraw()
+
 func setup(_config: Dictionary) -> void:
-	platform_center = Field.center()
+	layout()
 	set_process(false)
 	_reset_round()
 	InputManager.player_pressed.connect(_on_touch)

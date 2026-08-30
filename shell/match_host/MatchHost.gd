@@ -10,6 +10,9 @@ var _p2_score_label: Label
 var _paused_overlay: CanvasLayer
 var _bg: ColorRect
 var _bg_tween: Tween
+var _exit_btn: Button
+var _pause_btn: Button
+var _divider: ColorRect
 
 func _ready() -> void:
 	# A plain Control's default mouse_filter (STOP) swallows every tap over
@@ -47,6 +50,14 @@ func _ready() -> void:
 	_build_score_bar()
 	_build_midline()
 
+	# A phone browser resizes the canvas after load (address bar collapsing,
+	# orientation settling), so anything positioned once at _ready() is frozen
+	# at first-frame dimensions -- that is what pushed the P2 score pill off
+	# the right edge on a real device. Re-lay out the HUD and the game every
+	# time the viewport actually changes.
+	get_viewport().size_changed.connect(_relayout)
+	_relayout()
+
 	var countdown := CountdownOverlay.new()
 	add_child(countdown)
 	countdown.countdown_finished.connect(func(): _game.start_match())
@@ -69,34 +80,43 @@ func _build_score_bar() -> void:
 	bar.add_child(_p1_score_label)
 
 	_p2_score_label = UIUtil.make_score_pill(2)
-	_p2_score_label.position = Vector2(Field.width() - 20 - 96, 8)
 	bar.add_child(_p2_score_label)
 
-	var mid := Field.mid_x()
+	_exit_btn = UIUtil.make_round_button("X", 52, Palette.SURFACE)
+	_exit_btn.pressed.connect(_on_exit_pressed)
+	bar.add_child(_exit_btn)
 
-	var exit_btn := UIUtil.make_round_button("X", 52, Palette.SURFACE)
-	exit_btn.position = Vector2(mid - 26 - 60, 8)
-	exit_btn.pressed.connect(_on_exit_pressed)
-	bar.add_child(exit_btn)
-
-	var pause_btn := UIUtil.make_round_button("II", 52, Palette.SURFACE)
-	pause_btn.position = Vector2(mid + 8, 8)
-	pause_btn.pressed.connect(_on_pause_pressed)
-	bar.add_child(pause_btn)
+	_pause_btn = UIUtil.make_round_button("II", 52, Palette.SURFACE)
+	_pause_btn.pressed.connect(_on_pause_pressed)
+	bar.add_child(_pause_btn)
 
 func _build_midline() -> void:
 	# A shared board is not split between the players, so drawing a divider
 	# across it would misrepresent the game.
 	if _game.shared_board:
 		return
-	# Must sit exactly on Field.mid_x() -- this line is the promise the input
-	# split makes to the players, so it can never be a hardcoded 638 again.
-	var divider := ColorRect.new()
-	divider.color = Color(Palette.OUTLINE, 0.22)
-	divider.position = Vector2(Field.mid_x() - 2, Field.SCORE_BAR_HEIGHT)
-	divider.size = Vector2(4, Field.height() - Field.SCORE_BAR_HEIGHT)
-	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(divider)
+	_divider = ColorRect.new()
+	_divider.color = Color(Palette.OUTLINE, 0.22)
+	_divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_divider)
+
+## Single place where every screen-derived position is (re)computed, so the
+## HUD and the game can never drift apart from the actual viewport.
+func _relayout() -> void:
+	var mid := Field.mid_x()
+
+	_p2_score_label.position = Vector2(Field.width() - 20 - _p2_score_label.size.x, 8)
+	_exit_btn.position = Vector2(mid - 26 - 60, 8)
+	_pause_btn.position = Vector2(mid + 8, 8)
+
+	if _divider:
+		# Must sit exactly on Field.mid_x() -- this line is the promise the
+		# input split makes to the players.
+		_divider.position = Vector2(mid - 2, Field.SCORE_BAR_HEIGHT)
+		_divider.size = Vector2(4, Field.height() - Field.SCORE_BAR_HEIGHT)
+
+	if _game:
+		_game.layout()
 
 ## Turn-based games retint the whole screen to whoever is on the clock. Tween
 ## rather than cut, so the change reads as the game breathing instead of a
