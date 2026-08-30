@@ -26,8 +26,7 @@ static func draw_turn(node: CanvasItem, center: Vector2, player: int) -> void:
 	var pill_width: float = MARKER_INSET + TEXT_GAP + text_size.x + PAD_RIGHT
 	var pill := Rect2(center - Vector2(pill_width * 0.5, PILL_HEIGHT * 0.5), Vector2(pill_width, PILL_HEIGHT))
 
-	node.draw_rect(pill.grow(3.0), Palette.INK)
-	node.draw_rect(pill, color)
+	Juice.capsule(node, pill, color, 5.0)
 
 	# Shape marker, so the two players differ by more than hue.
 	var marker_center := Vector2(pill.position.x + MARKER_INSET, center.y)

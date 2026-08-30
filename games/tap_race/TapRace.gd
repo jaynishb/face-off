@@ -31,6 +31,7 @@ func _init() -> void:
 	display_name = "Tap Race"
 	rules_text = "Tap your two buttons as fast as you can.\nFirst to the finish wins!"
 	match_duration = 0.0
+	theme_bg = Palette.BG_TAP_RACE
 
 func setup(_config: Dictionary) -> void:
 	var top := Field.top()
@@ -121,56 +122,73 @@ func _draw_button(player: int, zone: int) -> void:
 	if rect.size == Vector2.ZERO:
 		return
 
-	var pad := 16.0
-	var inner := Rect2(rect.position + Vector2(pad, pad), rect.size - Vector2(pad, pad) * 2.0)
 	var color := Palette.for_player(player)
 	var is_next: bool = _last_zone[player] != zone
 	var flash: float = _flash.get(key, 0.0)
 
-	var fill_alpha: float = 0.16 if is_next else 0.06
-	if flash > 0.0:
-		fill_alpha += 0.34 * (flash / 0.12)
-	draw_rect(inner, Color(color, fill_alpha))
-	draw_rect(inner, Color(color, 0.9 if is_next else 0.35), false, 4.0)
+	# A real chunky button centred in the zone, not a tinted overlay across the
+	# whole half -- a big translucent rectangle reads as a dimmed screen rather
+	# than something to press. The whole zone still registers the tap.
+	var size := Vector2(minf(rect.size.x * 0.62, 260.0), minf(rect.size.y * 0.52, 108.0))
+	var btn := Rect2(rect.get_center() - size * 0.5, size)
+
+	# Pressed buttons sink into their shadow; the next one to hit sits proud.
+	var press: float = flash / 0.12
+	btn.position.y += 5.0 * press
+	var fill: Color = color if is_next else color.lerp(Palette.ASPHALT, 0.45)
+	if press > 0.0:
+		fill = fill.lightened(0.25 * press)
+
+	Juice.sticker_rect(self, btn, fill, 22.0, 6.0)
 
 	var font := ThemeDB.fallback_font
-	var label := "TAP" if is_next else "..."
-	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 34)
+	var label := "TAP" if is_next else "WAIT"
+	var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 40)
 	draw_string(
 		font,
-		inner.get_center() + Vector2(-size.x * 0.5, size.y * 0.34),
-		label, HORIZONTAL_ALIGNMENT_LEFT, -1, 34,
-		Color(color, 0.95 if is_next else 0.4),
+		btn.get_center() + Vector2(-text_size.x * 0.5, text_size.y * 0.34),
+		label, HORIZONTAL_ALIGNMENT_LEFT, -1, 40,
+		Palette.SURFACE if is_next else Color(Palette.SURFACE, 0.55),
 	)
 
+## An asphalt strip with a dashed centre line and a chequered finish post --
+## a road the car drives on, rather than a bare rule.
 func _draw_lane(player: int) -> void:
 	var x0: float = track_start[player]
 	var x1: float = track_end[player]
-	draw_line(Vector2(x0, lane_y), Vector2(x1, lane_y), Color(Palette.INK, 0.35), 4.0)
+	var road := Rect2(x0 - 10.0, lane_y - 34.0, (x1 - x0) + 20.0, 68.0)
+	Juice.sticker_rect(self, road, Palette.ASPHALT, 12.0, 6.0)
+
+	var dash := 22.0
+	var x := x0 + 4.0
+	while x < x1 - 8.0:
+		draw_line(Vector2(x, lane_y), Vector2(minf(x + dash, x1 - 8.0), lane_y), Color(Palette.ACCENT, 0.85), 4.0)
+		x += dash * 2.0
 
 	# Chequered finish post at the end of this player's own lane.
-	var square := 9.0
-	for i in range(6):
-		var c := Palette.INK if i % 2 == 0 else Palette.SURFACE
-		draw_rect(Rect2(x1, lane_y - 27.0 + i * square, square, square), c)
-		draw_rect(Rect2(x1 + square, lane_y - 27.0 + i * square, square, square),
-			Palette.SURFACE if i % 2 == 0 else Palette.INK)
+	var square := 11.0
+	for row in range(6):
+		for col in range(2):
+			var dark := (row + col) % 2 == 0
+			draw_rect(
+				Rect2(x1 - 4.0 + col * square, lane_y - 33.0 + row * square, square, square),
+				Palette.OUTLINE if dark else Palette.SURFACE,
+			)
 
-## A little cartoon car -- body, cabin, wheels, headlight. Replaces the flat
-## circle these racers used to be (GAME_AUDIT.md M1).
+## A little cartoon car -- body, cabin, wheels, headlight -- in the house
+## sticker style. Replaces the flat circle these racers used to be.
 func _draw_car(pos: Vector2, color: Color) -> void:
-	var body := Rect2(pos.x - 26.0, pos.y - 11.0, 52.0, 22.0)
-	var cabin := Rect2(pos.x - 13.0, pos.y - 23.0, 28.0, 14.0)
+	var body := Rect2(pos.x - 28.0, pos.y - 12.0, 56.0, 24.0)
+	var cabin := Rect2(pos.x - 14.0, pos.y - 25.0, 30.0, 15.0)
 
-	draw_rect(body.grow(3.0), Palette.INK)
-	draw_rect(cabin.grow(3.0), Palette.INK)
-	draw_rect(body, color)
-	draw_rect(cabin, color.lerp(Palette.SURFACE, 0.35))
+	# Wheels first, so the body sits over them.
+	for wheel_x in [pos.x - 16.0, pos.x + 16.0]:
+		draw_circle(Vector2(wheel_x, pos.y + 13.0), 10.0, Palette.OUTLINE)
+		draw_circle(Vector2(wheel_x, pos.y + 13.0), 4.0, Palette.SURFACE)
 
-	# Window + headlight.
-	draw_rect(Rect2(cabin.position.x + 4.0, cabin.position.y + 3.0, 20.0, 8.0), Color(1, 1, 1, 0.55))
-	draw_circle(Vector2(body.end.x - 4.0, pos.y - 2.0), 3.5, Palette.ACCENT)
+	Juice.sticker_rect(self, cabin, color.lerp(Palette.SURFACE, 0.30), 7.0, 5.0)
+	Juice.sticker_rect(self, body, color, 11.0, 5.0)
 
-	for wheel_x in [pos.x - 15.0, pos.x + 15.0]:
-		draw_circle(Vector2(wheel_x, pos.y + 12.0), 8.5, Palette.INK)
-		draw_circle(Vector2(wheel_x, pos.y + 12.0), 3.5, Palette.SURFACE)
+	# Windscreen + headlight.
+	Juice.rounded_rect(self, Rect2(cabin.position.x + 5.0, cabin.position.y + 4.0, 20.0, 7.0), Color(1, 1, 1, 0.6), 3.0)
+	draw_circle(Vector2(body.end.x - 6.0, pos.y - 2.0), 4.0, Palette.ACCENT)

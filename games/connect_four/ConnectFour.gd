@@ -33,6 +33,8 @@ func _init() -> void:
 	display_name = "Connect Four"
 	rules_text = "Tap a column to drop your piece.\nFour in a row — any direction — wins."
 	match_duration = 0.0
+	theme_bg = Palette.turn_tint(current_turn)
+	shared_board = true
 
 func setup(_config: Dictionary) -> void:
 	origin = Field.center() - Vector2(COLS * CELL * 0.5, ROWS * CELL * 0.5)
@@ -47,6 +49,10 @@ func setup(_config: Dictionary) -> void:
 func _set_turn(player: int) -> void:
 	current_turn = player
 	InputManager.set_shared_board_turn(player)
+	# The whole screen becomes the active player's colour -- on a shared phone
+	# that is the fastest possible "it's you" signal, far quicker to read than
+	# any badge.
+	set_theme_bg(Palette.turn_tint(player))
 
 func _process(delta: float) -> void:
 	if _falling.is_empty():
@@ -155,30 +161,33 @@ func _reset_board() -> void:
 func _draw() -> void:
 	var board_rect := Rect2(origin, Vector2(COLS * CELL, ROWS * CELL))
 
-	# A solid slab with holes punched in it -- the shape Connect Four is
-	# actually recognised by. Previously the board had no fill at all, so
-	# cream holes sat on the cream background at near-zero contrast and read
-	# as floating dots rather than a board (GAME_AUDIT.md M3).
-	var slab := Palette.PLAYER_2.lerp(Palette.INK, 0.45)
-	draw_rect(board_rect.grow(10.0), Palette.INK)
-	draw_rect(board_rect.grow(6.0), slab)
+	# The next token waits at the board's edge, so each player can see what
+	# they're about to play without reading any text. Drawn before the slab so
+	# it tucks behind it, as if queued in the feed slot.
+	if not _turn_locked:
+		var waiting := Vector2(origin.x - 30.0, origin.y + ROWS * CELL * 0.5)
+		Juice.cartoon_circle(self, waiting, CELL * 0.35, Palette.for_player(current_turn))
+
+	# A charcoal slab with holes punched through it -- the shape Connect Four
+	# is actually recognised by. The board had no fill at all before, so cream
+	# holes sat on a cream ground at near-zero contrast (GAME_AUDIT.md M3).
+	Juice.sticker_rect(self, board_rect.grow(14.0), Palette.BOARD_CHARCOAL, 26.0, 8.0)
 
 	for row in range(ROWS):
 		for col in range(COLS):
 			var center: Vector2 = origin + Vector2(col * CELL + CELL * 0.5, row * CELL + CELL * 0.5)
-			if _falling.has("%d_%d" % [col, row]):
-				# Hole only -- the token is drawn separately below, mid-drop.
-				draw_circle(center, CELL * 0.4, Palette.BACKGROUND)
-				continue
 			var v := _get_cell(row, col)
-			if v == 0:
-				draw_circle(center, CELL * 0.4, Palette.BACKGROUND)
+			if v == 0 or _falling.has("%d_%d" % [col, row]):
+				# Empty socket: a darker recess with a hard rim, so the board
+				# reads as drilled rather than printed.
+				draw_circle(center, CELL * 0.40, Palette.OUTLINE)
+				draw_circle(center, CELL * 0.35, Palette.BOARD_HOLE)
 			else:
-				Juice.cartoon_circle(self, center, CELL * 0.36, Palette.for_player(v))
+				Juice.cartoon_circle(self, center, CELL * 0.35, Palette.for_player(v), Vector2.ONE, false)
 
 	for key in _falling.keys():
 		var f: Dictionary = _falling[key]
 		var center: Vector2 = origin + Vector2(f.col * CELL + CELL * 0.5, f.y)
-		Juice.cartoon_circle(self, center, CELL * 0.36, Palette.for_player(f.player))
+		Juice.cartoon_circle(self, center, CELL * 0.35, Palette.for_player(f.player), Vector2.ONE, false)
 
-	TurnBanner.draw_turn(self, Vector2(origin.x + COLS * CELL * 0.5, origin.y - 44.0), current_turn)
+	TurnBanner.draw_turn(self, Vector2(origin.x + COLS * CELL * 0.5, origin.y - 58.0), current_turn)

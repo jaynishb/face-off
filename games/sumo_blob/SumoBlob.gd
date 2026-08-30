@@ -7,7 +7,7 @@ extends MiniGame
 const RADIUS_START := 300.0
 const RADIUS_END := 120.0
 const SHRINK_DURATION := 30.0
-const BLOB_RADIUS := 40.0
+const BLOB_RADIUS := 52.0
 const DASH_IMPULSE := 520.0
 const DASH_COOLDOWN := 0.4
 const FRICTION := 3.0
@@ -46,6 +46,8 @@ func _init() -> void:
 	display_name = "Sumo Blob"
 	rules_text = "Tap to dash.\nPush them off the edge.\nBest of 3 wins."
 	match_duration = 0.0
+	theme_bg = Palette.BG_SUMO
+	theme_dark = true
 
 func setup(_config: Dictionary) -> void:
 	platform_center = Field.center()
@@ -182,12 +184,12 @@ func _reset_round() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	# Platform: soft drop shadow, mat, inner ring, then the ink rim -- so the
-	# arena reads as a raised dohyo rather than a flat disc.
-	draw_circle(platform_center + Vector2(0, 10), platform_radius, Color(Palette.INK, 0.12))
-	draw_circle(platform_center, platform_radius, Palette.ACCENT.lerp(Palette.SURFACE, 0.25))
-	draw_arc(platform_center, platform_radius * 0.82, 0.0, TAU, 48, Color(Palette.INK, 0.16), 3.0)
-	draw_arc(platform_center, platform_radius, 0.0, TAU, 48, Palette.INK, 5.0)
+	# A raised clay dohyo: cast shadow, hard black rim, clay mat, and a lighter
+	# inner ring for the boundary the blobs are fighting over.
+	draw_circle(platform_center + Vector2(0, 14), platform_radius + 8.0, Color(0, 0, 0, 0.22))
+	draw_circle(platform_center, platform_radius + 9.0, Palette.OUTLINE)
+	draw_circle(platform_center, platform_radius, Palette.DOHYO_CLAY)
+	draw_arc(platform_center, platform_radius * 0.80, 0.0, TAU, 56, Palette.SURFACE.lerp(Palette.DOHYO_CLAY, 0.35), 6.0)
 
 	# Face the blobs toward each other so they read as opponents.
 	_draw_blob(p1_pos, p1_squash, Palette.PLAYER_1, 1.0 if p1_pos.x < p2_pos.x else -1.0)
@@ -201,10 +203,16 @@ func _draw_blob(pos: Vector2, squash: Vector2, color: Color, facing: float) -> v
 	var rx := BLOB_RADIUS * squash.x
 	var ry := BLOB_RADIUS * squash.y
 
+	var ow := Juice.outline_width(BLOB_RADIUS)
+	var cast := PackedVector2Array()
+	for p in _unit_pts:
+		cast.append(pos + Juice.SHADOW_OFFSET + Vector2(p.x * (rx + ow), p.y * (ry + ow)))
+	draw_colored_polygon(cast, Color(0, 0, 0, Juice.SHADOW_ALPHA))
+
 	var shadow := PackedVector2Array()
 	for p in _unit_pts:
-		shadow.append(pos + Vector2(p.x * (rx + 4.0), p.y * (ry + 4.0)))
-	draw_colored_polygon(shadow, Palette.INK)
+		shadow.append(pos + Vector2(p.x * (rx + ow), p.y * (ry + ow)))
+	draw_colored_polygon(shadow, Palette.OUTLINE)
 
 	var pts := PackedVector2Array()
 	for p in _unit_pts:

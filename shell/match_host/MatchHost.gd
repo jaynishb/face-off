@@ -8,6 +8,8 @@ var _game: MiniGame
 var _p1_score_label: Label
 var _p2_score_label: Label
 var _paused_overlay: CanvasLayer
+var _bg: ColorRect
+var _bg_tween: Tween
 
 func _ready() -> void:
 	# A plain Control's default mouse_filter (STOP) swallows every tap over
@@ -20,7 +22,7 @@ func _ready() -> void:
 	# with their own (STOP) filter. Caught by a real phone reporting "no
 	# controls" -- see CLAUDE.md.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
+	_bg = UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 	AudioManager.stop_music() # never music during a match -- see CLAUDE.md
 
 	var game_id: String = GameManager.pending_game_id
@@ -36,6 +38,11 @@ func _ready() -> void:
 	add_child(_game)
 	_game.setup({})
 	_game.score_updated.connect(_on_score_updated)
+	_game.theme_changed.connect(_on_theme_changed)
+
+	# The game owns its ground colour; the shell just paints it. No game_id
+	# branching here -- it all arrives through the MiniGame contract.
+	_bg.color = _game.theme_bg
 
 	_build_score_bar()
 	_build_midline()
@@ -47,56 +54,77 @@ func _ready() -> void:
 
 	_game.match_ended.connect(_on_match_ended)
 
+## Floating pills rather than a solid bar across the top: a bar forces one
+## surface colour over every game's ground, while pills sit on any of them and
+## leave the playfield uninterrupted.
 func _build_score_bar() -> void:
 	var bar := Control.new()
 	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	bar.custom_minimum_size = Vector2(0, 64)
+	bar.custom_minimum_size = Vector2(0, Field.SCORE_BAR_HEIGHT)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bar)
 
-	var bar_bg := ColorRect.new()
-	bar_bg.color = Palette.SURFACE
-	bar_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bar.add_child(bar_bg)
-
-	_p1_score_label = UIUtil.make_label("P1  0", 28, Palette.PLAYER_1)
-	_p1_score_label.position = Vector2(24, 16)
+	_p1_score_label = UIUtil.make_score_pill(1)
+	_p1_score_label.position = Vector2(20, 8)
 	bar.add_child(_p1_score_label)
 
-	_p2_score_label = UIUtil.make_label("0  P2", 28, Palette.PLAYER_2)
-	_p2_score_label.position = Vector2(Field.width() - 24 - 100, 16)
-	_p2_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_p2_score_label.size = Vector2(100, 40)
+	_p2_score_label = UIUtil.make_score_pill(2)
+	_p2_score_label.position = Vector2(Field.width() - 20 - 96, 8)
 	bar.add_child(_p2_score_label)
 
 	var mid := Field.mid_x()
 
-	# Not SURFACE -- the score bar behind it is already SURFACE, so a SURFACE
-	# button is invisible against it.
-	var exit_btn := UIUtil.make_button("X", 22, Palette.PLAYER_1)
-	exit_btn.custom_minimum_size = Vector2(48, 48)
-	exit_btn.position = Vector2(mid - 24 - 56, 8)
+	var exit_btn := UIUtil.make_round_button("X", 52, Palette.SURFACE)
+	exit_btn.position = Vector2(mid - 26 - 60, 8)
 	exit_btn.pressed.connect(_on_exit_pressed)
 	bar.add_child(exit_btn)
 
-	var pause_btn := UIUtil.make_button("II", 22, Palette.ACCENT)
-	pause_btn.custom_minimum_size = Vector2(48, 48)
-	pause_btn.position = Vector2(mid - 24, 8)
+	var pause_btn := UIUtil.make_round_button("II", 52, Palette.SURFACE)
+	pause_btn.position = Vector2(mid + 8, 8)
 	pause_btn.pressed.connect(_on_pause_pressed)
 	bar.add_child(pause_btn)
 
 func _build_midline() -> void:
+	# A shared board is not split between the players, so drawing a divider
+	# across it would misrepresent the game.
+	if _game.shared_board:
+		return
 	# Must sit exactly on Field.mid_x() -- this line is the promise the input
 	# split makes to the players, so it can never be a hardcoded 638 again.
 	var divider := ColorRect.new()
-	divider.color = Color(Palette.INK, 0.15)
+	divider.color = Color(Palette.OUTLINE, 0.22)
 	divider.position = Vector2(Field.mid_x() - 2, Field.SCORE_BAR_HEIGHT)
 	divider.size = Vector2(4, Field.height() - Field.SCORE_BAR_HEIGHT)
 	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(divider)
 
+## Turn-based games retint the whole screen to whoever is on the clock. Tween
+## rather than cut, so the change reads as the game breathing instead of a
+## flash between turns.
+func _on_theme_changed(bg: Color) -> void:
+	if _bg_tween and _bg_tween.is_running():
+		_bg_tween.kill()
+	_bg_tween = create_tween()
+	_bg_tween.tween_property(_bg, "color", bg, 0.35) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
 func _on_score_updated(score_p1: int, score_p2: int) -> void:
-	_p1_score_label.text = "P1  %d" % score_p1
-	_p2_score_label.text = "%d  P2" % score_p2
+	_set_score(_p1_score_label, score_p1)
+	_set_score(_p2_score_label, score_p2)
+
+## Pop the pill when its number changes, so a point registers peripherally --
+## on a shared screen neither player is looking at the HUD when they score.
+func _set_score(pill: Label, value: int) -> void:
+	var text := str(value)
+	if pill.text == text:
+		return
+	pill.text = text
+	pill.pivot_offset = pill.size * 0.5
+	var t := pill.create_tween()
+	t.tween_property(pill, "scale", Vector2(1.25, 1.25), 0.1) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(pill, "scale", Vector2.ONE, 0.2) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _on_pause_pressed() -> void:
 	if _paused_overlay:

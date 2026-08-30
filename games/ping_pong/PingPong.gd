@@ -2,9 +2,12 @@ extends MiniGame
 ## Ping Pong — vertical paddles, drag up/down. Ball speeds up each rally hit,
 ## capped so it never becomes unreadable. First to 7.
 
-const PADDLE_WIDTH := 18.0
+const PADDLE_WIDTH := 26.0
 const PADDLE_HEIGHT := 140.0
-const PADDLE_MARGIN := 40.0
+const PADDLE_MARGIN := 46.0
+## Inset of the table from the screen edge, so the game's ground colour reads
+## as a surround the table sits on rather than a thin border.
+const TABLE_INSET := 26.0
 const BALL_RADIUS := 14.0
 const WIN_SCORE := 7
 const BASE_BALL_SPEED := 420.0
@@ -16,6 +19,8 @@ const MAX_BALL_SPEED := 950.0
 # left edge while P2's floated ~170px inside the right one (GAME_AUDIT.md C4).
 var field_top := 0.0
 var field_bottom := 0.0
+var table_left := 0.0
+var table_right := 0.0
 var p1_x := 0.0
 var p2_x := 0.0
 
@@ -34,12 +39,15 @@ func _init() -> void:
 	display_name = "Ping Pong"
 	rules_text = "Slide your paddle.\nDon't let the ball past.\nFirst to 7 wins."
 	match_duration = 0.0
+	theme_bg = Palette.BG_PING_PONG
 
 func setup(_config: Dictionary) -> void:
-	field_top = Field.top()
-	field_bottom = Field.bottom()
-	p1_x = Field.left() + PADDLE_MARGIN
-	p2_x = Field.right() - PADDLE_MARGIN
+	field_top = Field.top() + TABLE_INSET * 0.5
+	field_bottom = Field.bottom() - TABLE_INSET * 0.5
+	table_left = Field.left() + TABLE_INSET
+	table_right = Field.right() - TABLE_INSET
+	p1_x = table_left + PADDLE_MARGIN
+	p2_x = table_right - PADDLE_MARGIN
 	p1_y = Field.center().y
 	p2_y = Field.center().y
 	ball_pos = Field.center()
@@ -86,9 +94,9 @@ func _process(delta: float) -> void:
 	_try_paddle_bounce(prev_x)
 	ball_squash = Juice.decay_squash(ball_squash, delta)
 
-	if ball_pos.x < Field.left() - BALL_RADIUS:
+	if ball_pos.x < table_left - BALL_RADIUS:
 		_score(2)
-	elif ball_pos.x > Field.right() + BALL_RADIUS:
+	elif ball_pos.x > table_right + BALL_RADIUS:
 		_score(1)
 
 	queue_redraw()
@@ -146,21 +154,31 @@ func _serve(towards: int) -> void:
 
 func _draw() -> void:
 	_draw_table()
-	Juice.cartoon_rect(self, Rect2(p1_x - PADDLE_WIDTH * 0.5, p1_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_1)
-	Juice.cartoon_rect(self, Rect2(p2_x - PADDLE_WIDTH * 0.5, p2_y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT), Palette.PLAYER_2)
-	Juice.cartoon_circle(self, ball_pos, BALL_RADIUS, Palette.INK, ball_squash)
+	_draw_paddle(p1_x, p1_y, Palette.PLAYER_1, 1.0)
+	_draw_paddle(p2_x, p2_y, Palette.PLAYER_2, -1.0)
+	Juice.cartoon_circle(self, ball_pos, BALL_RADIUS, Palette.SURFACE, ball_squash)
 
-## Table surface, border and a dashed net -- the play area was previously an
-## undifferentiated rectangle with nothing to read position against.
+## A real table: green playing surface inside a heavy black frame, a white
+## centre line down the length of it, and the net across the middle.
 func _draw_table() -> void:
-	var table := Rect2(Field.left(), field_top, Field.right() - Field.left(), field_bottom - field_top)
-	draw_rect(table, Palette.SURFACE)
+	var table := Rect2(table_left, field_top, table_right - table_left, field_bottom - field_top)
+	Juice.sticker_rect(self, table, Palette.TABLE_GREEN, 14.0, 11.0)
 
 	var mid := Field.mid_x()
-	var dash := 18.0
-	var y := field_top + 6.0
-	while y < field_bottom:
-		draw_line(Vector2(mid, y), Vector2(mid, minf(y + dash, field_bottom)), Color(Palette.INK, 0.22), 4.0)
-		y += dash * 2.0
+	var cy := (field_top + field_bottom) * 0.5
 
-	draw_rect(table, Palette.INK, false, 4.0)
+	# Centre line runs the long way, as on a real doubles table.
+	draw_line(Vector2(table_left + 14.0, cy), Vector2(table_right - 14.0, cy), Palette.SURFACE, 6.0)
+
+	# Net across the middle: a white band with a darker seam through it.
+	draw_line(Vector2(mid, field_top + 10.0), Vector2(mid, field_bottom - 10.0), Palette.SURFACE, 18.0)
+	draw_line(Vector2(mid, field_top + 10.0), Vector2(mid, field_bottom - 10.0), Palette.TABLE_GREEN.darkened(0.30), 5.0)
+
+## A bat, not a bar: rounded blade plus a handle stub pointing off the table,
+## so each side reads as a held paddle the way the reference art does.
+func _draw_paddle(x: float, y: float, color: Color, facing: float) -> void:
+	var handle := Rect2(x - facing * 26.0 - 7.0, y - 9.0, 26.0, 18.0)
+	Juice.sticker_rect(self, handle, color.lerp(Palette.OUTLINE, 0.25), 6.0, 5.0)
+
+	var blade := Rect2(x - PADDLE_WIDTH * 0.5, y - PADDLE_HEIGHT * 0.5, PADDLE_WIDTH, PADDLE_HEIGHT)
+	Juice.capsule(self, blade, color, 6.0)

@@ -42,6 +42,8 @@ func _init() -> void:
 	display_name = "Air Hockey"
 	rules_text = "Drag your paddle.\nHit the puck into their goal.\nFirst to 5 wins."
 	match_duration = 0.0
+	theme_bg = Palette.BG_AIR_HOCKEY
+	theme_dark = true
 
 func setup(_config: Dictionary) -> void:
 	field_top = Field.top()
@@ -171,36 +173,41 @@ func _draw() -> void:
 	_draw_rink()
 	Juice.cartoon_circle(self, p1_pos, PADDLE_RADIUS, Palette.PLAYER_1)
 	Juice.cartoon_circle(self, p2_pos, PADDLE_RADIUS, Palette.PLAYER_2)
-	Juice.cartoon_circle(self, puck_pos, PUCK_RADIUS, Palette.INK, puck_squash)
+	Juice.cartoon_circle(self, puck_pos, PUCK_RADIUS, Palette.BOARD_CHARCOAL, puck_squash)
 
 ## The rink itself: surface, border, centre line and circle, and a goal mouth
 ## at each end. Previously the play area was an undifferentiated rectangle
 ## with no goals drawn at all (GAME_AUDIT.md C5 / M4).
 func _draw_rink() -> void:
 	var rink := Rect2(field_left, field_top, field_right - field_left, field_bottom - field_top)
-	draw_rect(rink, Palette.SURFACE)
+	Juice.sticker_rect(self, rink, Palette.RINK_ICE, 26.0, 10.0)
 
 	var center_y := (field_top + field_bottom) * 0.5
-	draw_line(Vector2(mid_x, field_top), Vector2(mid_x, field_bottom), Color(Palette.INK, 0.18), 3.0)
-	draw_arc(Vector2(mid_x, center_y), 90.0, 0.0, TAU, 48, Color(Palette.INK, 0.18), 3.0)
-	draw_arc(Vector2(mid_x, center_y), 10.0, 0.0, TAU, 16, Color(Palette.INK, 0.18), 3.0)
+	var marking := Color(Palette.BG_AIR_HOCKEY, 0.30)
+	draw_line(Vector2(mid_x, field_top + 10.0), Vector2(mid_x, field_bottom - 10.0), marking, 5.0)
+	draw_arc(Vector2(mid_x, center_y), 96.0, 0.0, TAU, 56, marking, 5.0)
+	draw_circle(Vector2(mid_x, center_y), 9.0, marking)
 
-	# Goal mouths -- drawn in each player's colour, since this is the end that
-	# player is defending.
+	# Goal creases + mouths, in the colour of the player defending that end.
 	_draw_goal(field_left, Palette.PLAYER_1, 1.0)
 	_draw_goal(field_right, Palette.PLAYER_2, -1.0)
 
-	draw_rect(rink, Palette.INK, false, 4.0)
-
 func _draw_goal(x: float, color: Color, inward: float) -> void:
+	var crease_r := (goal_bottom - goal_top) * 0.62
+	# Half-circle crease, clipped naturally by sitting on the end wall.
+	draw_arc(
+		Vector2(x, (goal_top + goal_bottom) * 0.5), crease_r,
+		-PI * 0.5 * inward, PI * 0.5 * inward, 32,
+		Color(color, 0.45), 5.0,
+	)
+
+	# The mouth itself: a recess in the end wall, so it reads as an opening.
+	var depth := 20.0
 	var mouth := Rect2(
-		x - (18.0 if inward > 0.0 else 0.0),
+		x if inward > 0.0 else x - depth,
 		goal_top,
-		18.0,
+		depth,
 		goal_bottom - goal_top,
 	)
-	draw_rect(mouth, Color(color, 0.35))
-	draw_line(Vector2(x, goal_top), Vector2(x, goal_bottom), color, 7.0)
-	# Short lip top and bottom so the opening reads as a mouth, not a stripe.
-	draw_line(Vector2(x, goal_top), Vector2(x + 26.0 * inward, goal_top), color, 5.0)
-	draw_line(Vector2(x, goal_bottom), Vector2(x + 26.0 * inward, goal_bottom), color, 5.0)
+	Juice.rounded_rect(self, mouth.grow(5.0), Palette.OUTLINE, 8.0)
+	Juice.rounded_rect(self, mouth, color, 6.0)

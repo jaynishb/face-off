@@ -26,13 +26,53 @@ static func make_button(text: String, font_size: int = 28, bg_color: Color = Pal
 	var style := StyleBoxFlat.new()
 	style.bg_color = bg_color
 	style.set_corner_radius_all(20)
+	# Hard black edge + a soft drop shadow, matching the sticker look the games
+	# draw with (see Juice.gd), so UI and gameplay read as one visual system.
+	style.border_color = Palette.OUTLINE
+	style.set_border_width_all(5)
+	style.shadow_color = Color(0, 0, 0, 0.18)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 5)
 	btn.add_theme_stylebox_override("normal", style)
 	btn.add_theme_stylebox_override("hover", style)
 	btn.add_theme_stylebox_override("pressed", style)
 	btn.add_theme_stylebox_override("focus", style)
+	btn.add_theme_stylebox_override("disabled", style)
 
 	wire_bounce(btn)
 	return btn
+
+## A circular icon button (exit, pause) -- the reference HUD style: a small
+## floating disc rather than a control welded into a solid bar, so it works
+## over any game's ground colour.
+static func make_round_button(text: String, diameter: float = 56.0, bg_color: Color = Palette.SURFACE) -> Button:
+	var btn := make_button(text, 22, bg_color)
+	btn.custom_minimum_size = Vector2(diameter, diameter)
+	btn.size = Vector2(diameter, diameter)
+	var style: StyleBoxFlat = btn.get_theme_stylebox("normal").duplicate()
+	style.set_corner_radius_all(int(diameter * 0.5))
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		btn.add_theme_stylebox_override(state, style)
+	return btn
+
+## A score pill in a player's colour, for the floating in-match HUD.
+static func make_score_pill(player: int) -> Label:
+	var lbl := make_label("0", 30, Palette.SURFACE)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.custom_minimum_size = Vector2(96, 52)
+	lbl.size = Vector2(96, 52)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Palette.for_player(player)
+	style.set_corner_radius_all(26)
+	style.border_color = Palette.OUTLINE
+	style.set_border_width_all(5)
+	style.shadow_color = Color(0, 0, 0, 0.18)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 5)
+	lbl.add_theme_stylebox_override("normal", style)
+	return lbl
 
 ## Button press = scale to 0.92 and bounce back, per the motion rules — apply
 ## to any Button, hand-built or scene-authored, so the feel stays consistent.

@@ -30,6 +30,8 @@ func _init() -> void:
 	display_name = "Tic-Tac-Toe"
 	rules_text = "Tap a square.\nThree in a row wins the round.\nFirst to 3 rounds wins."
 	match_duration = 0.0
+	theme_bg = Palette.turn_tint(current_turn)
+	shared_board = true
 
 func setup(_config: Dictionary) -> void:
 	grid_origin = Field.center() - Vector2(CELL * 1.5, CELL * 1.5)
@@ -46,6 +48,8 @@ func start_match() -> void:
 func _set_turn(player: int) -> void:
 	current_turn = player
 	InputManager.set_shared_board_turn(player)
+	# Whole-screen tint to whoever is on the clock -- see ConnectFour.
+	set_theme_bg(Palette.turn_tint(player))
 
 func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 	if not _match_active or _round_locked:
@@ -131,10 +135,13 @@ func _pop_piece(idx: int) -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _draw() -> void:
+	# Board as a single cream slab with the grid scored into it, rather than
+	# four bare lines floating on the ground colour.
+	var board_rect := Rect2(grid_origin, Vector2(3 * CELL, 3 * CELL))
+	Juice.sticker_rect(self, board_rect.grow(14.0), Palette.SURFACE, 24.0, 8.0)
 	for i in range(1, 3):
-		draw_line(grid_origin + Vector2(i * CELL, 0), grid_origin + Vector2(i * CELL, 3 * CELL), Palette.INK, 4)
-		draw_line(grid_origin + Vector2(0, i * CELL), grid_origin + Vector2(3 * CELL, i * CELL), Palette.INK, 4)
-	draw_rect(Rect2(grid_origin, Vector2(3 * CELL, 3 * CELL)), Palette.INK, false, 4)
+		draw_line(grid_origin + Vector2(i * CELL, 6.0), grid_origin + Vector2(i * CELL, 3 * CELL - 6.0), Palette.OUTLINE, 7.0)
+		draw_line(grid_origin + Vector2(6.0, i * CELL), grid_origin + Vector2(3 * CELL - 6.0, i * CELL), Palette.OUTLINE, 7.0)
 
 	for idx in range(9):
 		var v: int = board[idx]
@@ -146,11 +153,16 @@ func _draw() -> void:
 		var color := Palette.for_player(v)
 		var s: float = piece_scale[idx]
 		if v == 1:
-			var d: float = 40.0 * s
-			draw_line(center + Vector2(-d, -d), center + Vector2(d, d), color, 10)
-			draw_line(center + Vector2(-d, d), center + Vector2(d, -d), color, 10)
+			var d: float = 38.0 * s
+			# Outline pass then colour pass, so the mark carries the same hard
+			# black edge as every other piece in the app.
+			draw_line(center + Vector2(-d, -d), center + Vector2(d, d), Palette.OUTLINE, 22.0)
+			draw_line(center + Vector2(-d, d), center + Vector2(d, -d), Palette.OUTLINE, 22.0)
+			draw_line(center + Vector2(-d, -d), center + Vector2(d, d), color, 13.0)
+			draw_line(center + Vector2(-d, d), center + Vector2(d, -d), color, 13.0)
 		else:
-			draw_arc(center, 45.0 * s, 0, TAU, 32, color, 10)
+			draw_arc(center, 42.0 * s, 0, TAU, 40, Palette.OUTLINE, 24.0)
+			draw_arc(center, 42.0 * s, 0, TAU, 40, color, 14.0)
 
 	var banner_center := Vector2(grid_origin.x + 1.5 * CELL, grid_origin.y - 44.0)
 	if _message != "":
