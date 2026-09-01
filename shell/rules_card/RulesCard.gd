@@ -22,9 +22,7 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 	dim_tween.tween_property(dim, "color", Color(Palette.INK, 0.45), 0.2)
 
 	var card := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Palette.SURFACE
-	style.set_corner_radius_all(28)
+	var style := UIUtil.soft_panel_style(Palette.SURFACE, 28.0)
 	style.set_content_margin_all(32)
 	card.add_theme_stylebox_override("panel", style)
 	card.custom_minimum_size = Vector2(640, 420)
@@ -39,8 +37,8 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 	var title := UIUtil.make_label(display_name.to_upper(), 40)
 	vbox.add_child(title)
 
-	var diagram := ColorRect.new()
-	diagram.color = Palette.BACKGROUND
+	var diagram := Panel.new()
+	diagram.add_theme_stylebox_override("panel", UIUtil.soft_panel_style(Palette.GRADIENT_RULES_TOP, 20.0))
 	diagram.custom_minimum_size = Vector2(0, 140)
 	vbox.add_child(diagram)
 
@@ -58,13 +56,12 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 	rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(rules_label)
 
-	var got_it := UIUtil.make_button("GOT IT!", 26, Palette.SUCCESS)
+	var got_it := UIUtil.make_soft_button("GOT IT!", 26, Palette.SUCCESS)
 	got_it.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	got_it.pressed.connect(_on_dismiss)
 	vbox.add_child(got_it)
 
-	var close_btn := UIUtil.make_button("X", 22, Palette.SURFACE)
-	close_btn.custom_minimum_size = Vector2(56, 56)
+	var close_btn := UIUtil.make_soft_round_button("X", 56, Palette.SURFACE)
 	close_btn.position = Vector2(Field.width() - 80, 24)
 	close_btn.pressed.connect(_on_dismiss)
 	add_child(close_btn)

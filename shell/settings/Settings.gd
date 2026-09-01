@@ -5,11 +5,10 @@ extends Control
 const VERSION := "0.1.0-dev"
 
 func _ready() -> void:
-	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
+	UIUtil.gradient_bg(self, Palette.GRADIENT_SETTINGS_TOP, Palette.GRADIENT_SETTINGS_BOTTOM)
 	AudioManager.play_menu_music()
 
-	var back_btn := UIUtil.make_button("<", 28, Palette.SURFACE)
-	back_btn.custom_minimum_size = Vector2(64, 64)
+	var back_btn := UIUtil.make_soft_round_button("<", 64, Palette.SURFACE)
 	back_btn.position = Vector2(24, 24)
 	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
 	add_child(back_btn)
@@ -29,8 +28,8 @@ func _ready() -> void:
 	vbox.add_child(_make_toggle_row("Music", SaveManager.music_enabled, func(v): AudioManager.set_music_enabled(v)))
 	vbox.add_child(_make_toggle_row("Haptics", SaveManager.haptics_enabled, func(v): SaveManager.set_haptics_enabled(v)))
 
-	var ads_btn := UIUtil.make_button(
-		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22
+	var ads_btn := UIUtil.make_soft_button(
+		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22, Palette.ACCENT
 	)
 	ads_btn.disabled = SaveManager.ad_free
 	ads_btn.pressed.connect(func():
@@ -39,11 +38,11 @@ func _ready() -> void:
 	)
 	vbox.add_child(ads_btn)
 
-	var restore_btn := UIUtil.make_button("Restore Purchase", 20, Palette.SURFACE)
+	var restore_btn := UIUtil.make_soft_button("Restore Purchase", 20, Palette.SURFACE)
 	restore_btn.pressed.connect(_on_restore_pressed)
 	vbox.add_child(restore_btn)
 
-	var privacy_btn := UIUtil.make_button("Privacy Policy", 18, Palette.SURFACE)
+	var privacy_btn := UIUtil.make_soft_button("Privacy Policy", 18, Palette.SURFACE)
 	privacy_btn.pressed.connect(_on_privacy_pressed)
 	vbox.add_child(privacy_btn)
 

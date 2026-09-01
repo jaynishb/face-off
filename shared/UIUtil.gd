@@ -14,6 +14,94 @@ static func full_rect_bg(parent: Control, color: Color) -> ColorRect:
 	parent.move_child(bg, 0)
 	return bg
 
+## A soft top-to-bottom gradient background, for the shell's smooth/clean
+## look (as opposed to the flat sticker grounds games render with). Same
+## call shape as full_rect_bg -- drop-in replacement on shell screens.
+static func gradient_bg(parent: Control, top_color: Color, bottom_color: Color) -> TextureRect:
+	var gradient := Gradient.new()
+	gradient.set_color(0, top_color)
+	gradient.set_color(1, bottom_color)
+	var tex := GradientTexture2D.new()
+	tex.gradient = gradient
+	tex.fill = GradientTexture2D.FILL_LINEAR
+	tex.fill_from = Vector2(0, 0)
+	tex.fill_to = Vector2(0, 1)
+	tex.width = 2
+	tex.height = 512
+
+	var bg := TextureRect.new()
+	bg.texture = tex
+	bg.stretch_mode = TextureRect.STRETCH_SCALE
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(bg)
+	parent.move_child(bg, 0)
+	return bg
+
+## A soft blurred glow, e.g. behind a mascot or hero element -- radial,
+## fading to transparent, no hard edge. Purely decorative (ignores input).
+static func soft_glow(parent: Control, color: Color, diameter: float = 240.0) -> TextureRect:
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(color, 0.35))
+	gradient.set_color(1, Color(color, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = gradient
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 128
+	tex.height = 128
+
+	var glow := TextureRect.new()
+	glow.texture = tex
+	glow.custom_minimum_size = Vector2(diameter, diameter)
+	glow.size = Vector2(diameter, diameter)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(glow)
+	return glow
+
+## A soft, borderless rounded panel style -- the shell's "smooth card" look:
+## no hard outline (unlike the sticker style's thick ink edge), just a
+## gentle drop shadow. Used for shell cards/tiles/panels.
+static func soft_panel_style(bg_color: Color = Palette.SURFACE, corner: float = 28.0) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.set_corner_radius_all(int(corner))
+	style.shadow_color = Color(0, 0, 0, 0.10)
+	style.shadow_size = 18
+	style.shadow_offset = Vector2(0, 8)
+	return style
+
+## A smooth, borderless button for shell screens -- rounded corners and a
+## soft shadow, no thick ink outline (that's reserved for the sticker style
+## games/match-HUD use). Same call shape as make_button.
+static func make_soft_button(text: String, font_size: int = 28, bg_color: Color = Palette.ACCENT, text_color: Color = Palette.INK) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(280, 84)
+	btn.add_theme_font_size_override("font_size", font_size)
+	btn.add_theme_color_override("font_color", text_color)
+	btn.add_theme_color_override("font_hover_color", text_color)
+	btn.add_theme_color_override("font_pressed_color", text_color)
+
+	var style := soft_panel_style(bg_color, 28.0)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		btn.add_theme_stylebox_override(state, style)
+
+	wire_bounce(btn)
+	return btn
+
+## A circular soft icon button (back/close/settings) matching make_soft_button.
+static func make_soft_round_button(text: String, diameter: float = 56.0, bg_color: Color = Palette.SURFACE) -> Button:
+	var btn := make_soft_button(text, 22, bg_color)
+	btn.custom_minimum_size = Vector2(diameter, diameter)
+	btn.size = Vector2(diameter, diameter)
+	var style: StyleBoxFlat = btn.get_theme_stylebox("normal").duplicate()
+	style.set_corner_radius_all(int(diameter * 0.5))
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		btn.add_theme_stylebox_override(state, style)
+	return btn
+
 static func make_button(text: String, font_size: int = 28, bg_color: Color = Palette.ACCENT) -> Button:
 	var btn := Button.new()
 	btn.text = text

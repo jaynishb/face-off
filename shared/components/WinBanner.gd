@@ -6,6 +6,7 @@ class_name WinBanner
 @export var title_label_path: NodePath
 
 var _title_label: Label
+var _card: PanelContainer
 
 func _ready() -> void:
 	layer = 40
@@ -15,13 +16,18 @@ func _ready() -> void:
 	visible = false
 
 func _build_ui() -> void:
+	_card = PanelContainer.new()
+	var style := UIUtil.soft_panel_style(Palette.SURFACE, 32.0)
+	style.set_content_margin_all(28)
+	_card.add_theme_stylebox_override("panel", style)
+	_card.set_anchors_preset(Control.PRESET_CENTER)
+	add_child(_card)
+
 	_title_label = Label.new()
-	_title_label.set_anchors_preset(Control.PRESET_CENTER)
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_size_override("font_size", 64)
-	_title_label.pivot_offset = Vector2(160, 40)
-	add_child(_title_label)
+	_card.add_child(_title_label)
 
 func show_winner(winner: int) -> void:
 	visible = true
@@ -35,7 +41,11 @@ func show_winner(winner: int) -> void:
 		_title_label.text = "PLAYER %d WINS!" % winner
 		_title_label.add_theme_color_override("font_color", Palette.for_player(winner))
 
-	_title_label.scale = Vector2(0.5, 0.5)
+	var anim_root: Control = _card if _card else _title_label
+	anim_root.scale = Vector2(0.5, 0.5)
+	if _card:
+		await get_tree().process_frame
+		_card.pivot_offset = _card.size * 0.5
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_title_label, "scale", Vector2.ONE, 0.35)
+	tween.tween_property(anim_root, "scale", Vector2.ONE, 0.35)

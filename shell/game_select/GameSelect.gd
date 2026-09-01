@@ -1,14 +1,13 @@
 extends Control
-## Game Select — chunky tiles, one per launch-roster game, each with its own
-## [?] rules button. Tapping a tile the first time auto-opens the rules card
-## before starting; subsequent taps launch straight in.
+## Game Select — one soft, shadowed tile per launch-roster game, each with
+## its own [?] rules button. Tapping a tile the first time auto-opens the
+## rules card before starting; subsequent taps launch straight in.
 
 func _ready() -> void:
-	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
+	UIUtil.gradient_bg(self, Palette.GRADIENT_SELECT_TOP, Palette.GRADIENT_SELECT_BOTTOM)
 	AudioManager.play_menu_music()
 
-	var back_btn := UIUtil.make_button("<", 28, Palette.SURFACE)
-	back_btn.custom_minimum_size = Vector2(64, 64)
+	var back_btn := UIUtil.make_soft_round_button("<", 64, Palette.SURFACE)
 	back_btn.position = Vector2(24, 24)
 	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
 	add_child(back_btn)
@@ -51,10 +50,7 @@ func _build_tile(game_id: String) -> Control:
 	tile.custom_minimum_size = Vector2(360, 220)
 
 	var panel := Panel.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Palette.SURFACE
-	style.set_corner_radius_all(24)
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", UIUtil.soft_panel_style(Palette.SURFACE, 24.0))
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	tile.add_child(panel)
 
@@ -81,15 +77,14 @@ func _build_tile(game_id: String) -> Control:
 	# this self-corrects with no code change once the scene file lands.
 	var built := ResourceLoader.exists(meta.get("scene", ""))
 
-	var play_btn := UIUtil.make_button("PLAY" if built else "SOON", 22, Palette.ACCENT if built else Palette.SURFACE)
+	var play_btn := UIUtil.make_soft_button("PLAY" if built else "SOON", 22, Palette.ACCENT if built else Palette.SURFACE)
 	play_btn.custom_minimum_size = Vector2(180, 64)
 	play_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	play_btn.disabled = not built
 	play_btn.pressed.connect(func(): _on_tile_pressed(game_id))
 	vbox.add_child(play_btn)
 
-	var rules_btn := UIUtil.make_button("?", 20, Palette.SURFACE)
-	rules_btn.custom_minimum_size = Vector2(40, 40)
+	var rules_btn := UIUtil.make_soft_round_button("?", 40, Palette.SURFACE)
 	rules_btn.position = Vector2(360 - 56, 8)
 	rules_btn.pressed.connect(func(): _show_rules(game_id))
 	tile.add_child(rules_btn)

@@ -10,15 +10,14 @@ var _p1_mascot: TextureRect
 var _p2_mascot: TextureRect
 
 func _ready() -> void:
-	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
+	UIUtil.gradient_bg(self, Palette.GRADIENT_MENU_TOP, Palette.GRADIENT_MENU_BOTTOM)
 	GameManager.clear_session_tally()
 	AudioManager.play_menu_music()
 
 	# Plain ASCII text, not a symbol glyph -- the default engine font has no
 	# coverage for gear/emoji codepoints and silently draws a tofu box
 	# instead (same class of bug fixed for game-tile emoji; see CLAUDE.md).
-	var settings_btn := UIUtil.make_button("SET", 20, Palette.SURFACE)
-	settings_btn.custom_minimum_size = Vector2(64, 64)
+	var settings_btn := UIUtil.make_soft_round_button("SET", 64, Palette.SURFACE)
 	settings_btn.position = Vector2(24, 24)
 	settings_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/settings/Settings.tscn"))
 	add_child(settings_btn)
@@ -40,21 +39,27 @@ func _ready() -> void:
 	subtitle.size = Vector2(Field.width(), 40)
 	add_child(subtitle)
 
-	var play_btn := UIUtil.make_button("PLAY", 40, Palette.SUCCESS)
+	var play_btn := UIUtil.make_soft_button("PLAY", 40, Palette.SUCCESS)
 	play_btn.custom_minimum_size = Vector2(420, 120)
 	play_btn.position = Vector2(Field.mid_x() - 210, 210)
 	play_btn.pressed.connect(_on_play_pressed)
 	add_child(play_btn)
 	UIUtil.pop_in(play_btn, 0.1)
 
-	var remove_ads_btn := UIUtil.make_button(
-		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22
+	var remove_ads_btn := UIUtil.make_soft_button(
+		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22, Palette.SURFACE
 	)
 	remove_ads_btn.custom_minimum_size = Vector2(280, 64)
 	remove_ads_btn.position = Vector2(Field.mid_x() - 140, 356)
 	remove_ads_btn.disabled = SaveManager.ad_free
 	remove_ads_btn.pressed.connect(_on_remove_ads_pressed)
 	add_child(remove_ads_btn)
+
+	# A soft brand-coloured glow behind each mascot -- the "smooth, clean"
+	# equivalent of the reference art's glowing/sparkling hero character,
+	# added before the mascots themselves so it renders behind them.
+	UIUtil.soft_glow(self, Palette.PLAYER_1, 260.0).position = Vector2(Field.mid_x() - 250, 480)
+	UIUtil.soft_glow(self, Palette.PLAYER_2, 260.0).position = Vector2(Field.mid_x() + 5, 480)
 
 	_p1_mascot = _build_mascot("res://shared/art/mascot_p1.svg", Vector2(Field.mid_x() - 220, 515), false)
 	_p2_mascot = _build_mascot("res://shared/art/mascot_p2.svg", Vector2(Field.mid_x() + 70, 515), true)

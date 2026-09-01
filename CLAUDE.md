@@ -260,6 +260,17 @@ Also landed in this pass: real Air Hockey goal mouths (the whole end line used t
 
 **Verification lesson, restated because it keeps mattering:** check the thing input is supposed to move — paddle position, piece placement — never just the score. The playtest harness lives in `/tmp/pt` (not checked in); it drives `Input.dispatchTouchEvent` through CDP, including genuinely simultaneous two-finger input.
 
+## Shell "smooth, clean" visual pass
+
+The shell screens (Main Menu, Game Select, Rules Card, Results, the win banner, Settings) got a second, distinct visual language layered on top of the sticker style — soft pastel gradient backgrounds and borderless rounded cards/buttons with a gentle drop shadow, closer to a modern wellness-app onboarding flow than a game HUD. **This is additive, not a replacement**: in-game rendering (`Juice.gd`'s cartoon circles/rects, used by every game's pucks/paddles/tokens) and the match HUD (`UIUtil.make_button`/`make_round_button`/`make_score_pill`, used by `MatchHost`'s pause/exit/score chrome) are untouched and still use the thick-ink-outline sticker look on purpose — the two styles are meant to read as "calm shell, energetic match," not as an inconsistency to fix.
+
+- **`Palette.gd`** gained five `GRADIENT_*_TOP`/`_BOTTOM` pairs, one per shell screen (menu/select/rules/results/settings), each its own soft mood the same way each game already owns a full-screen ground colour. `PLAYER_1`/`PLAYER_2` and every other existing constant are unchanged — the fixed player color-coding rule is a gameplay/accessibility invariant, not a shell "look," and stayed out of scope for this pass.
+- **`UIUtil.gd`** gained `gradient_bg()` (a `GradientTexture2D`-backed drop-in replacement for `full_rect_bg()`), `soft_glow()` (a radial fade, used behind the Main Menu mascots), `soft_panel_style()` (borderless rounded `StyleBoxFlat` with a soft shadow, no hard ink outline), and `make_soft_button()`/`make_soft_round_button()` (the borderless equivalents of `make_button()`/`make_round_button()`). The original sticker-style helpers are untouched and still used verbatim by `MatchHost` and every game.
+- Applied `gradient_bg` + the soft button/panel helpers across `MainMenu.gd`, `GameSelect.gd`, `RulesCard.gd`, `Results.gd`, `WinBanner.gd`, and `Settings.gd`. `WinBanner`'s floating "PLAYER X WINS!" text now sits on a soft card instead of bare on the screen. The Main Menu's mascots get a soft brand-coloured (coral/teal) glow behind them, echoing a hero-character glow without adding a new art asset.
+- Verified end-to-end via a real Godot 4.3 Web export (fetched per the "Engine verification" section below) served locally and driven with Playwright/Chromium: Main Menu → Game Select → Rules Card all render and interact correctly with the new styling (screenshots taken, not just a headless import check).
+
+If a future pass wants the sticker style itself softened (i.e. changing how games/match-HUD render), that's a bigger, separate decision — it touches every game's `_draw()` code and the accessibility-driven color/shape pairing rule, not just shell chrome.
+
 ## Reference
 
 Full product spec, personas, wireframes, store listing copy, and success metrics: `FACE_OFF_PRD.md`.

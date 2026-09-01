@@ -43,6 +43,26 @@ const TURN_TINT_P2 := Color("#67AFD6")
 const BOARD_CHARCOAL := Color("#2A3038")
 const BOARD_HOLE := Color("#49535E")
 
+## Soft pastel gradients for the shell (menu/select/rules/results/settings) --
+## each screen gets its own muted mood the same way each game owns a
+## full-screen ground colour above. This is the "smooth, clean" shell look
+## layered on top of the sticker style, which still governs in-game
+## rendering (Juice.gd) and the match HUD -- see CLAUDE.md.
+const GRADIENT_MENU_TOP := Color("#FFF3E4")
+const GRADIENT_MENU_BOTTOM := Color("#FFE1C2")
+
+const GRADIENT_SELECT_TOP := Color("#EAF7F0")
+const GRADIENT_SELECT_BOTTOM := Color("#D8EFE6")
+
+const GRADIENT_RULES_TOP := Color("#E8F5F7")
+const GRADIENT_RULES_BOTTOM := Color("#D6ECEF")
+
+const GRADIENT_RESULTS_TOP := Color("#FFF6DE")
+const GRADIENT_RESULTS_BOTTOM := Color("#FFE9B8")
+
+const GRADIENT_SETTINGS_TOP := Color("#F3EFEA")
+const GRADIENT_SETTINGS_BOTTOM := Color("#E7E1D8")
+
 static func for_player(player: int) -> Color:
 	return PLAYER_1 if player == 1 else PLAYER_2
 
