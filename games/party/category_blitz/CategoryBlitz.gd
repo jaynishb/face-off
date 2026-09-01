@@ -90,8 +90,8 @@ func layout() -> void:
 	_count_label.position = _arc_center - Vector2(24, 26)
 	_buzz_label.position = Vector2(mid - 110, top + 250)
 
-	_next_btn.position = Vector2(mid - 260, top + 370)
-	_replay_btn.position = Vector2(mid + 20, top + 370)
+	_next_btn.position = Vector2(mid - 292, top + 370)
+	_replay_btn.position = Vector2(mid + 12, top + 370)
 
 func start() -> void:
 	_new_round()
@@ -109,6 +109,7 @@ func _new_round() -> void:
 func _replay_timer() -> void:
 	_buzzing = false
 	_buzz_label.visible = false
+	_count_label.visible = true
 	_progress = 0.0
 	_timer.start(DURATION)
 	queue_redraw()
@@ -120,8 +121,9 @@ func _on_tick(seconds_remaining: float) -> void:
 
 func _on_time_up() -> void:
 	_buzzing = true
+	_count_label.visible = false
 	_buzz_label.visible = true
-	_count_label.text = "0"
+	UIUtil.punch(_buzz_label)
 	if SaveManager.haptics_enabled:
 		Input.vibrate_handheld(60)
 	queue_redraw()

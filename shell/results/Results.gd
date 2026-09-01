@@ -32,16 +32,16 @@ func _ready() -> void:
 
 	var rematch_btn := UIUtil.make_soft_button("REMATCH", 40, Palette.SUCCESS)
 	rematch_btn.custom_minimum_size = Vector2(440, 140)
-	rematch_btn.position = Vector2(Field.mid_x() - 460, 420)
+	rematch_btn.position = Vector2(Field.mid_x() - 380, 420)
 	rematch_btn.pressed.connect(_on_rematch_pressed)
 	add_child(rematch_btn)
 
 	var menu_btn := UIUtil.make_soft_button("MENU", 32, Palette.SURFACE)
 	menu_btn.custom_minimum_size = Vector2(280, 100)
-	menu_btn.position = Vector2(Field.mid_x() + 40, 440)
-	menu_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
+	menu_btn.position = Vector2(Field.mid_x() + 100, 440)
+	menu_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
 	add_child(menu_btn)
 
 func _on_rematch_pressed() -> void:
 	GameManager.pending_game_id = GameManager.current_game_id
-	get_tree().change_scene_to_file("res://shell/match_host/MatchHost.tscn")
+	UIUtil.fade_to_scene(get_tree(), "res://shell/match_host/MatchHost.tscn")

@@ -21,7 +21,7 @@ func _ready() -> void:
 	var game_id: String = PartyManager.pending_game_id
 	_game = PartyManager.load_party_game(game_id)
 	if not _game:
-		get_tree().change_scene_to_file("res://shell/party_select/PartyGameSelect.tscn")
+		UIUtil.fade_to_scene(get_tree(), "res://shell/party_select/PartyGameSelect.tscn")
 		return
 
 	# Party games never use screen-half or shared-board input ownership, but
@@ -66,4 +66,4 @@ func _on_theme_changed(bg: Color) -> void:
 ## MatchHost, nothing is "in progress" to lose -- a party game is open-ended,
 ## not a match with a winner.
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://shell/party_select/PartyGameSelect.tscn")
+	UIUtil.fade_to_scene(get_tree(), "res://shell/party_select/PartyGameSelect.tscn")

@@ -57,7 +57,7 @@ func setup(_config: Dictionary) -> void:
 	var style := UIUtil.soft_panel_style(Palette.SURFACE, 28.0)
 	style.set_content_margin_all(28)
 	_card.add_theme_stylebox_override("panel", style)
-	_card.custom_minimum_size = Vector2(640, 220)
+	_card.custom_minimum_size = Vector2(640, 300)
 	add_child(_card)
 
 	var vbox := VBoxContainer.new()
@@ -97,10 +97,10 @@ func layout() -> void:
 	_lang_option.size = Vector2(200, 48)
 
 	_card.position = Vector2(mid - 320, top + 110)
-	_card.size = Vector2(640, 220)
+	_card.size = Vector2(640, 300)
 	_card.pivot_offset = _card.size * 0.5
 
-	_reveal_btn.position = Vector2(mid - 100, top + 350)
+	_reveal_btn.position = Vector2(mid - 140, top + 430)
 
 func _select_option(option: OptionButton, value: String) -> void:
 	for i in range(option.item_count):
@@ -140,3 +140,4 @@ func _on_reveal_pressed() -> void:
 	var t := _card.create_tween()
 	t.tween_property(_card, "scale", Vector2.ONE, 0.3) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	UIUtil.punch(_title_label)

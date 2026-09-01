@@ -216,3 +216,46 @@ static func pop_in(node: Control, delay: float = 0.0, target_scale: float = 1.0)
 	t.tween_interval(delay)
 	t.tween_property(node, "scale", Vector2(target_scale, target_scale), 0.4) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## A quick scale-punch for a value that just changed -- a stepper count, a
+## revealed result, a buzzer. Same shape as MatchHost's score-pill pop
+## (1.25x back-out, settle to 1.0); pulled out here so every new "the number
+## just changed" moment gets the same feel without re-deriving it per game.
+## Waits a frame first so pivot_offset reflects the post-text-change size,
+## same reasoning as pop_in above.
+static func punch(node: Control) -> void:
+	await node.get_tree().process_frame
+	node.pivot_offset = node.size * 0.5
+	var t := node.create_tween()
+	t.tween_property(node, "scale", Vector2(1.25, 1.25), 0.1) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(node, "scale", Vector2.ONE, 0.2) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## Cross-fades to a new scene instead of an instant cut, per CLAUDE.md's
+## "Screen transitions <=200ms" rule -- every change_scene_to_file() call in
+## the app should route through this rather than calling it directly.
+## The overlay is added directly under the tree's root (not the current
+## scene) so it survives change_scene_to_file's swap; the freshly-loaded
+## scene is appended as root's newest child right after the swap, which
+## would draw over our overlay, so it's re-parented to the end of root's
+## children before fading back out.
+static func fade_to_scene(tree: SceneTree, scene_path: String, duration: float = 0.1) -> void:
+	var overlay := ColorRect.new()
+	overlay.color = Color(Palette.INK, 0.0)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	tree.root.add_child(overlay)
+
+	var fade_in := overlay.create_tween()
+	fade_in.tween_property(overlay, "color:a", 1.0, duration)
+	await fade_in.finished
+
+	tree.change_scene_to_file(scene_path)
+	await tree.process_frame
+	tree.root.move_child(overlay, tree.root.get_child_count() - 1)
+
+	var fade_out := overlay.create_tween()
+	fade_out.tween_property(overlay, "color:a", 0.0, duration)
+	await fade_out.finished
+	overlay.queue_free()

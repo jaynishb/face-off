@@ -43,6 +43,7 @@ func setup(_config: Dictionary) -> void:
 	add_child(_minus_btn)
 
 	_seg_label = UIUtil.make_label(str(_segment_count), 28)
+	_seg_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(_seg_label)
 
 	_plus_btn = UIUtil.make_soft_round_button("+", 48, Palette.SURFACE)
@@ -68,12 +69,13 @@ func layout() -> void:
 
 	_stepper_label_ref.position = Vector2(mid - 90, top)
 	_minus_btn.position = Vector2(mid - 100, top + 26)
-	_seg_label.position = Vector2(mid - 20, top + 34)
+	_seg_label.position = Vector2(mid - 52, top + 26)
+	_seg_label.size = Vector2(104, 48)
 	_plus_btn.position = Vector2(mid + 52, top + 26)
 
 	_wheel_center = Vector2(mid, top + 280.0)
 
-	_spin_btn.position = Vector2(mid - 100, top + 450)
+	_spin_btn.position = Vector2(mid - 140, top + 450)
 	_result_label.position = Vector2(mid - 100, top + 550)
 
 func _change_segments(delta: int) -> void:
@@ -82,6 +84,7 @@ func _change_segments(delta: int) -> void:
 	_segment_count = clampi(_segment_count + delta, MIN_SEGMENTS, MAX_SEGMENTS)
 	SaveManager.set_party_wheel_segments(_segment_count)
 	_seg_label.text = str(_segment_count)
+	UIUtil.punch(_seg_label)
 	_winning_index = -1
 	_result_label.text = "TAP SPIN"
 	queue_redraw()
@@ -117,6 +120,7 @@ func _resolve_winner() -> void:
 	var seg_angle := TAU / _segment_count
 	_winning_index = int(floor(wrapf(-_rotation, 0.0, TAU) / seg_angle)) % _segment_count
 	_result_label.text = "PLAYER %d" % (_winning_index + 1)
+	UIUtil.punch(_result_label)
 	AudioManager.play_sfx("win")
 	if SaveManager.haptics_enabled:
 		Input.vibrate_handheld(40)

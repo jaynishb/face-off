@@ -19,7 +19,7 @@ func _ready() -> void:
 	# instead (same class of bug fixed for game-tile emoji; see CLAUDE.md).
 	var settings_btn := UIUtil.make_soft_round_button("SET", 64, Palette.SURFACE)
 	settings_btn.position = Vector2(24, 24)
-	settings_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/settings/Settings.tscn"))
+	settings_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/settings/Settings.tscn"))
 	add_child(settings_btn)
 
 	# NOTE: these controls rely on default (top-left) anchors with an absolute
@@ -52,7 +52,7 @@ func _ready() -> void:
 	party_btn.add_theme_color_override("font_pressed_color", Palette.SURFACE)
 	party_btn.custom_minimum_size = Vector2(420, 84)
 	party_btn.position = Vector2(Field.mid_x() - 210, 346)
-	party_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/party_select/PartyGameSelect.tscn"))
+	party_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/party_select/PartyGameSelect.tscn"))
 	add_child(party_btn)
 	UIUtil.pop_in(party_btn, 0.15)
 
@@ -101,10 +101,10 @@ func _react_mascots() -> void:
 func _on_play_pressed() -> void:
 	_react_mascots()
 	await get_tree().create_timer(0.2).timeout
-	get_tree().change_scene_to_file("res://shell/game_select/GameSelect.tscn")
+	UIUtil.fade_to_scene(get_tree(), "res://shell/game_select/GameSelect.tscn")
 
 func _on_remove_ads_pressed() -> void:
 	# TODO: wire to the platform IAP flow (Godot Android IAP plugin / StoreKit).
 	# Never blocks play; this is a placeholder confirmation only.
 	SaveManager.set_ad_free(true)
-	get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn")
+	UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn")

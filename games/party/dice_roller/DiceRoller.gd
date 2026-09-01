@@ -59,6 +59,7 @@ func setup(_config: Dictionary) -> void:
 	add_child(_minus_btn)
 
 	_count_label = UIUtil.make_label(str(_dice_count), 28)
+	_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(_count_label)
 
 	_plus_btn = UIUtil.make_soft_round_button("+", 48, Palette.SURFACE)
@@ -85,10 +86,11 @@ func layout() -> void:
 
 	_stepper_label_ref.position = Vector2(mid - 90, top)
 	_minus_btn.position = Vector2(mid - 100, top + 26)
-	_count_label.position = Vector2(mid - 20, top + 34)
+	_count_label.position = Vector2(mid - 52, top + 26)
+	_count_label.size = Vector2(104, 48)
 	_plus_btn.position = Vector2(mid + 52, top + 26)
 
-	_roll_btn.position = Vector2(mid - 100, top + 96)
+	_roll_btn.position = Vector2(mid - 140, top + 96)
 	_total_label.position = Vector2(mid - 80, top + 200)
 
 	_layout_dice()
@@ -114,6 +116,7 @@ func _change_count(delta: int) -> void:
 	_dice_count = clampi(_dice_count + delta, MIN_DICE, MAX_DICE)
 	SaveManager.set_party_dice_count(_dice_count)
 	_count_label.text = str(_dice_count)
+	UIUtil.punch(_count_label)
 	_rebuild_dice()
 
 func _current_total() -> int:

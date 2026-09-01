@@ -31,7 +31,7 @@ func _ready() -> void:
 	var game_id: String = GameManager.pending_game_id
 	_game = GameManager.load_game(game_id)
 	if not _game:
-		get_tree().change_scene_to_file("res://shell/game_select/GameSelect.tscn")
+		UIUtil.fade_to_scene(get_tree(), "res://shell/game_select/GameSelect.tscn")
 		return
 
 	# Reset any input config left behind by a previous game, so a mode never
@@ -155,24 +155,28 @@ func _on_pause_pressed() -> void:
 	add_child(_paused_overlay)
 
 	var dim := ColorRect.new()
-	dim.color = Color(Palette.INK, 0.5)
+	dim.color = Color(Palette.INK, 0.0)
+	dim.process_mode = Node.PROCESS_MODE_ALWAYS
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_paused_overlay.add_child(dim)
+	dim.create_tween().tween_property(dim, "color", Color(Palette.INK, 0.5), 0.15)
 
 	var resume_btn := UIUtil.make_button("RESUME", 28, Palette.SUCCESS)
 	resume_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	resume_btn.position = Vector2(Field.mid_x() - 140, 300)
 	resume_btn.pressed.connect(_on_resume_pressed)
 	_paused_overlay.add_child(resume_btn)
+	UIUtil.pop_in(resume_btn, 0.0)
 
 	var menu_btn := UIUtil.make_button("MENU", 24, Palette.SURFACE)
 	menu_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	menu_btn.position = Vector2(Field.mid_x() - 140, 420)
 	menu_btn.pressed.connect(func():
 		get_tree().paused = false
-		get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn")
+		UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn")
 	)
 	_paused_overlay.add_child(menu_btn)
+	UIUtil.pop_in(menu_btn, 0.05)
 
 ## A dedicated, always-visible exit -- separate from Pause -- so a player on
 ## the web build (no OS back button to rely on) has one direct tap to bail
@@ -186,9 +190,11 @@ func _on_exit_pressed() -> void:
 	add_child(_paused_overlay)
 
 	var dim := ColorRect.new()
-	dim.color = Color(Palette.INK, 0.5)
+	dim.color = Color(Palette.INK, 0.0)
+	dim.process_mode = Node.PROCESS_MODE_ALWAYS
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_paused_overlay.add_child(dim)
+	dim.create_tween().tween_property(dim, "color", Color(Palette.INK, 0.5), 0.15)
 
 	var prompt := UIUtil.make_label("Exit this match?", 32)
 	prompt.position = Vector2(0, 240)
@@ -196,21 +202,24 @@ func _on_exit_pressed() -> void:
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.process_mode = Node.PROCESS_MODE_ALWAYS
 	_paused_overlay.add_child(prompt)
+	UIUtil.pop_in(prompt, 0.0)
 
 	var confirm_btn := UIUtil.make_button("EXIT TO MENU", 24, Palette.PLAYER_1)
 	confirm_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	confirm_btn.position = Vector2(Field.mid_x() - 140, 320)
 	confirm_btn.pressed.connect(func():
 		get_tree().paused = false
-		get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn")
+		UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn")
 	)
 	_paused_overlay.add_child(confirm_btn)
+	UIUtil.pop_in(confirm_btn, 0.05)
 
 	var cancel_btn := UIUtil.make_button("KEEP PLAYING", 24, Palette.SUCCESS)
 	cancel_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	cancel_btn.position = Vector2(Field.mid_x() - 140, 440)
 	cancel_btn.pressed.connect(_on_resume_pressed)
 	_paused_overlay.add_child(cancel_btn)
+	UIUtil.pop_in(cancel_btn, 0.1)
 
 func _on_resume_pressed() -> void:
 	get_tree().paused = false
@@ -231,4 +240,4 @@ func _on_match_ended(winner: int, _score_p1: int, _score_p2: int) -> void:
 	var ad_shown := AdManager.maybe_show_interstitial()
 	if ad_shown:
 		await AdManager.interstitial_dismissed
-	get_tree().change_scene_to_file("res://shell/results/Results.tscn")
+	UIUtil.fade_to_scene(get_tree(), "res://shell/results/Results.tscn")

@@ -10,7 +10,7 @@ func _ready() -> void:
 
 	var back_btn := UIUtil.make_soft_round_button("<", 64, Palette.SURFACE)
 	back_btn.position = Vector2(24, 24)
-	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
+	back_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
 	add_child(back_btn)
 
 	var title := UIUtil.make_label("SETTINGS", 40)
@@ -34,7 +34,7 @@ func _ready() -> void:
 	ads_btn.disabled = SaveManager.ad_free
 	ads_btn.pressed.connect(func():
 		SaveManager.set_ad_free(true)
-		get_tree().change_scene_to_file("res://shell/settings/Settings.tscn")
+		UIUtil.fade_to_scene(get_tree(), "res://shell/settings/Settings.tscn")
 	)
 	vbox.add_child(ads_btn)
 

@@ -12,7 +12,7 @@ func _ready() -> void:
 
 	var back_btn := UIUtil.make_soft_round_button("<", 64, Palette.SURFACE)
 	back_btn.position = Vector2(24, 24)
-	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
+	back_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
 	add_child(back_btn)
 
 	var title := UIUtil.make_label("PARTY MODE", 40)
@@ -116,4 +116,4 @@ func _show_rules(game_id: String) -> void:
 
 func _launch(game_id: String) -> void:
 	PartyManager.pending_game_id = game_id
-	get_tree().change_scene_to_file("res://shell/party_host/PartyHost.tscn")
+	UIUtil.fade_to_scene(get_tree(), "res://shell/party_host/PartyHost.tscn")
