@@ -1,20 +1,18 @@
 name: Deploy Web build to GitHub Pages
 
-# Builds the Godot HTML5/Web export and publishes it to GitHub Pages.
-# Runs automatically on pushes to main; can also be triggered manually
-# (Actions tab -> this workflow -> Run workflow) against any branch to
-# preview that branch's build before it merges.
+# Builds the Godot HTML5/Web export and publishes it to the repo's existing
+# `gh-pages` branch (GitHub Pages here is already configured as "Deploy
+# from a branch: gh-pages" -- see CLAUDE.md). Runs automatically on pushes
+# to main; can also be triggered manually (Actions tab -> this workflow ->
+# Run workflow) against any branch to preview it before merging.
 on:
   push:
     branches: [main]
   workflow_dispatch: {}
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Only one Pages deployment at a time; a newer push supersedes an in-flight one.
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -23,7 +21,7 @@ env:
   GODOT_VERSION: 4.3-stable
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,19 +53,11 @@ jobs:
         run: |
           mkdir -p build/web
           godot --headless --path . --export-release "Web" build/web/index.html
+          touch build/web/.nojekyll
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: build/web
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/web
+          publish_branch: gh-pages

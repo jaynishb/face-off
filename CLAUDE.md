@@ -214,9 +214,7 @@ In short: the app's game logic and shell are code-complete for all 6 launch game
 
 ## Automated GitHub Pages deployment
 
-`.github/workflows/deploy-pages.yml` builds the same Web export described below in CI (fetches Godot + export templates, copies `export_presets.example.cfg` into place, imports, exports release) and publishes it to GitHub Pages via `actions/deploy-pages`. Runs on every push to `main`; can also be triggered manually (Actions tab → "Deploy Web build to GitHub Pages" → Run workflow) against any branch/ref to preview it before merging.
-
-**One-time manual step required**: GitHub Pages must have its source set to "GitHub Actions" once, under the repo's Settings → Pages → Build and deployment. The workflow itself can't do this — it's a repo-admin setting, not something a workflow run can flip. Until that's done, the `deploy` job's `actions/deploy-pages` step fails even though `build` succeeds.
+GitHub Pages for this repo is already configured as "Deploy from a branch: `gh-pages`" (that's how the Web build referenced in "Engine verification" below first got hosted for on-device testing). `.github/workflows/deploy-pages.yml` automates keeping that branch current: it builds the same Web export described below in CI (fetches Godot + export templates, copies `export_presets.example.cfg` into place, imports, exports release) and pushes the result to `gh-pages` via `peaceiris/actions-gh-pages`. Runs on every push to `main`; can also be triggered manually (Actions tab → "Deploy Web build to GitHub Pages" → Run workflow) against any branch/ref to refresh the live preview before merging. No repo Settings change is needed — it reuses the existing branch-based Pages config rather than switching to the Actions-native deployment method.
 
 ## Engine verification (HTML5/Web export) — correction to earlier day logs
 
