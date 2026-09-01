@@ -1,0 +1,394 @@
+[
+  {
+    "prompt": "Name a type of pasta",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a fruit",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a country in Europe",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a kitchen appliance",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a board game",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of cheese",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a musical instrument",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a sport played with a ball",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a breed of dog",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a color",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a vegetable",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of bread",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a card game",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a piece of furniture",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a season",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a body part",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of shoe",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a school subject",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of weather",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a farm animal",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of hat",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a spice",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a tool you'd find in a garage",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing you'd pack for a beach trip",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of dance",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing that is round",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing you'd find in a fridge",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of tree",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing that flies",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a superhero",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing you'd find on a desk",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of soup",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing you'd find in a bathroom",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of pizza topping",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing that's sticky",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing you'd find at a birthday party",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of nut",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing that makes noise",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a thing you'd find in a toolbox",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name a type of chair",
+    "pack": "classic"
+  },
+  {
+    "prompt": "Name an actor who's played a superhero",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a Disney movie",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a boy band",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a reality TV show",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a video game character",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a dance craze",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a talk show host",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a celebrity couple",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a sitcom",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a pop star",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a movie franchise with more than 3 sequels",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name an Oscar-winning actor",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a cartoon character",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a K-pop group",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a superhero movie",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a horror movie",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a Netflix show",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a movie villain",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a stand-up comedian",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a TV crime drama",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a viral internet trend",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a rapper",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a famous fictional detective",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a movie with a plot twist",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a game show",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a famous movie soundtrack song",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name an animated movie sidekick",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a celebrity chef",
+    "pack": "pop_culture"
+  },
+  {
+    "prompt": "Name a fast food chain",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a breakfast food",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a dessert",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a type of tea",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a street food",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a cocktail",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a type of noodle dish",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a sandwich",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a type of ice cream flavor",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a comfort food",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a snack you'd eat at the movies",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a type of curry",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a soft drink brand",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a breakfast cereal",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a type of dumpling",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a food you'd eat with your hands",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name a birthday cake flavor",
+    "pack": "food_drink"
+  },
+  {
+    "prompt": "Name something you'd find in a suitcase",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a thing that's cold",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a job that requires a uniform",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name something you do before bed",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a thing you'd bring camping",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a reason to be late",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name something everyone has in their pocket",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a thing you'd find in a classroom",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a thing that's loud",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a superstition",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a thing you'd say at a wedding",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a thing you'd find at an amusement park",
+    "pack": "wildcard"
+  },
+  {
+    "prompt": "Name a New Year's resolution",
+    "pack": "wildcard"
+  }
+]

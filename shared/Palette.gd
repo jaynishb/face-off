@@ -43,6 +43,14 @@ const TURN_TINT_P2 := Color("#67AFD6")
 const BOARD_CHARCOAL := Color("#2A3038")
 const BOARD_HOLE := Color("#49535E")
 
+## Per-party-game grounds -- same "each game owns a full-screen colour"
+## convention as the 1v1 games above, just lighter/softer since Party Mode's
+## games are mostly Control-UI tools rather than a rendered playfield.
+const BG_MOVIE_GUESS := Color("#F1E9FB") # soft violet, matches the party gradient
+const BG_DICE_ROLLER := Color("#FFF4E0") # warm cream, calm backdrop for the dice
+const BG_CATEGORY_BLITZ := Color("#FFE9E5") # warm blush, ramps toward urgency red
+const BG_SPIN_WHEEL := Color("#E6F7F1") # cool mint, sets off the colourful wheel
+
 ## Soft pastel gradients for the shell (menu/select/rules/results/settings) --
 ## each screen gets its own muted mood the same way each game owns a
 ## full-screen ground colour above. This is the "smooth, clean" shell look
@@ -62,6 +70,14 @@ const GRADIENT_RESULTS_BOTTOM := Color("#FFE9B8")
 
 const GRADIENT_SETTINGS_TOP := Color("#F3EFEA")
 const GRADIENT_SETTINGS_BOTTOM := Color("#E7E1D8")
+
+## Party Mode's own accent -- distinct from every 1v1 player/accent colour so
+## the group-play section reads as its own thing on the Main Menu, not a
+## variant of PLAY.
+const PARTY_PRIMARY := Color("#9B5DE5") # violet
+
+const GRADIENT_PARTY_TOP := Color("#F1E9FB")
+const GRADIENT_PARTY_BOTTOM := Color("#E3D3F5")
 
 static func for_player(player: int) -> Color:
 	return PLAYER_1 if player == 1 else PLAYER_2

@@ -1,0 +1,1507 @@
+[
+  {
+    "title": "The Godfather",
+    "year": 1972,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Godfather Part II",
+    "year": 1974,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Jaws",
+    "year": 1975,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Star Wars",
+    "year": 1977,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Rocky",
+    "year": 1976,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Taxi Driver",
+    "year": 1976,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Apocalypse Now",
+    "year": 1979,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Alien",
+    "year": 1979,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "One Flew Over the Cuckoo's Nest",
+    "year": 1975,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Chinatown",
+    "year": 1974,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "The Exorcist",
+    "year": 1973,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Close Encounters of the Third Kind",
+    "year": 1977,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Grease",
+    "year": 1978,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Saturday Night Fever",
+    "year": 1977,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "A Clockwork Orange",
+    "year": 1971,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Raiders of the Lost Ark",
+    "year": 1981,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "E.T. the Extra-Terrestrial",
+    "year": 1982,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Back to the Future",
+    "year": 1985,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Empire Strikes Back",
+    "year": 1980,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Return of the Jedi",
+    "year": 1983,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Ghostbusters",
+    "year": 1984,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Top Gun",
+    "year": 1986,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Die Hard",
+    "year": 1988,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Terminator",
+    "year": 1984,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Rocky IV",
+    "year": 1985,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Breakfast Club",
+    "year": 1985,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Beetlejuice",
+    "year": 1988,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Shining",
+    "year": 1980,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Batman",
+    "year": 1989,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Indiana Jones and the Last Crusade",
+    "year": 1989,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Aliens",
+    "year": 1986,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Predator",
+    "year": 1987,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Princess Bride",
+    "year": 1987,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Dirty Dancing",
+    "year": 1987,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Working Girl",
+    "year": 1988,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Jurassic Park",
+    "year": 1993,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Lion King",
+    "year": 1994,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Forrest Gump",
+    "year": 1994,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Titanic",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Matrix",
+    "year": 1999,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Pulp Fiction",
+    "year": 1994,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Shawshank Redemption",
+    "year": 1994,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Home Alone",
+    "year": 1990,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Toy Story",
+    "year": 1995,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Independence Day",
+    "year": 1996,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Men in Black",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Good Will Hunting",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Sixth Sense",
+    "year": 1999,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Fight Club",
+    "year": 1999,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Saving Private Ryan",
+    "year": 1998,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Speed",
+    "year": 1994,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Se7en",
+    "year": 1995,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Braveheart",
+    "year": 1995,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Terminator 2: Judgment Day",
+    "year": 1991,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Aladdin",
+    "year": 1992,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Silence of the Lambs",
+    "year": 1991,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Jerry Maguire",
+    "year": 1996,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Notting Hill",
+    "year": 1999,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "American Beauty",
+    "year": 1999,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Groundhog Day",
+    "year": 1993,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Gladiator",
+    "year": 2000,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Lord of the Rings: The Fellowship of the Ring",
+    "year": 2001,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Harry Potter and the Sorcerer's Stone",
+    "year": 2001,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Spider-Man",
+    "year": 2002,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Dark Knight",
+    "year": 2008,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Pirates of the Caribbean: The Curse of the Black Pearl",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Finding Nemo",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Shrek",
+    "year": 2001,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Incredibles",
+    "year": 2004,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Avatar",
+    "year": 2009,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Iron Man",
+    "year": 2008,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Slumdog Millionaire",
+    "year": 2008,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "No Country for Old Men",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Departed",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Pan's Labyrinth",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "WALL-E",
+    "year": 2008,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Up",
+    "year": 2009,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Mean Girls",
+    "year": 2004,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Napoleon Dynamite",
+    "year": 2004,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Bourne Identity",
+    "year": 2002,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Kill Bill: Volume 1",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Ocean's Eleven",
+    "year": 2001,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "X-Men",
+    "year": 2000,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Transformers",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Juno",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Prestige",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Million Dollar Baby",
+    "year": 2004,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Little Miss Sunshine",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "300",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Devil Wears Prada",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Inception",
+    "year": 2010,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Avengers",
+    "year": 2012,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Frozen",
+    "year": 2013,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Interstellar",
+    "year": 2014,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Mad Max: Fury Road",
+    "year": 2015,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Social Network",
+    "year": 2010,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Toy Story 3",
+    "year": 2010,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Gravity",
+    "year": 2013,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Whiplash",
+    "year": 2014,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "La La Land",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Get Out",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Black Panther",
+    "year": 2018,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Avengers: Endgame",
+    "year": 2019,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Joker",
+    "year": 2019,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Deadpool",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Guardians of the Galaxy",
+    "year": 2014,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Wolf of Wall Street",
+    "year": 2013,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Django Unchained",
+    "year": 2012,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "12 Years a Slave",
+    "year": 2013,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Grand Budapest Hotel",
+    "year": 2014,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Zootopia",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Coco",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Knives Out",
+    "year": 2019,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "A Star Is Born",
+    "year": 2018,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Dunkirk",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Moonlight",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Martian",
+    "year": 2015,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Star Wars: The Force Awakens",
+    "year": 2015,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Jojo Rabbit",
+    "year": 2019,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Lady Bird",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Tenet",
+    "year": 2020,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Dune",
+    "year": 2021,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Spider-Man: No Way Home",
+    "year": 2021,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Top Gun: Maverick",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Everything Everywhere All at Once",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Oppenheimer",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Barbie",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Batman",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Nope",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Encanto",
+    "year": 2021,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "No Time to Die",
+    "year": 2021,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Turning Red",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Poor Things",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Killers of the Flower Moon",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Super Mario Bros. Movie",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Dune: Part Two",
+    "year": 2024,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Wicked",
+    "year": 2024,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Inside Out 2",
+    "year": 2024,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Anora",
+    "year": 2024,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Sound of Freedom",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Sholay",
+    "year": 1975,
+    "decade": "1970s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Deewaar",
+    "year": 1975,
+    "decade": "1970s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Bobby",
+    "year": 1973,
+    "decade": "1970s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Amar Akbar Anthony",
+    "year": 1977,
+    "decade": "1970s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Don",
+    "year": 1978,
+    "decade": "1970s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Mr. India",
+    "year": 1987,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Qayamat Se Qayamat Tak",
+    "year": 1988,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Namak Halaal",
+    "year": 1982,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Karz",
+    "year": 1980,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Ram Lakhan",
+    "year": 1989,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Dilwale Dulhania Le Jayenge",
+    "year": 1995,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Hum Aapke Hain Koun",
+    "year": 1994,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Kuch Kuch Hota Hai",
+    "year": 1998,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Dil To Pagal Hai",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Rangeela",
+    "year": 1995,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Border",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Baazigar",
+    "year": 1993,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Darr",
+    "year": 1993,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Andaz Apna Apna",
+    "year": 1994,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Judaai",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Lagaan",
+    "year": 2001,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Kabhi Khushi Kabhie Gham",
+    "year": 2001,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Koi... Mil Gaya",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Devdas",
+    "year": 2002,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Kal Ho Naa Ho",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Rang De Basanti",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Om Shanti Om",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Chak De! India",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "3 Idiots",
+    "year": 2009,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Taare Zameen Par",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Dangal",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "PK",
+    "year": 2014,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Bajrangi Bhaijaan",
+    "year": 2015,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Queen",
+    "year": 2013,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Zindagi Na Milegi Dobara",
+    "year": 2011,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Gully Boy",
+    "year": 2019,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Andhadhun",
+    "year": 2018,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Kahaani",
+    "year": 2012,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Barfi!",
+    "year": 2012,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Sultan",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Gehraiyaan",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Pathaan",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Jawan",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Gangubai Kathiawadi",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "12th Fail",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Animal",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Rocky Aur Rani Kii Prem Kahaani",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Drishyam 2",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Shershaah",
+    "year": 2021,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Bhool Bhulaiyaa 2",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Mandala",
+    "year": 1981,
+    "decade": "1980s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Ticket",
+    "year": 1986,
+    "decade": "1980s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Sopyonje",
+    "year": 1993,
+    "decade": "1990s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "The Contact",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Christmas in August",
+    "year": 1998,
+    "decade": "1990s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "My Sassy Girl",
+    "year": 2001,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Oasis",
+    "year": 2002,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Oldboy",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Memories of Murder",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Host",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Man from Nowhere",
+    "year": 2010,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "I Saw the Devil",
+    "year": 2010,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Train to Busan",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "easy"
+  },
+  {
+    "title": "The Wailing",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Handmaiden",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "A Taxi Driver",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Burning",
+    "year": 2018,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Parasite",
+    "year": 2019,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "easy"
+  },
+  {
+    "title": "Decision to Leave",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Broker",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Hunt",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Roundup",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "12.12: The Day",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Concrete Utopia",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Exhuma",
+    "year": 2024,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "medium"
+  }
+]

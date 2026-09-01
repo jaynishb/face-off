@@ -21,6 +21,7 @@ config/icon="res://icon.svg"
 
 Field="*res://autoload/Field.gd"
 GameManager="*res://autoload/GameManager.gd"
+PartyManager="*res://autoload/PartyManager.gd"
 InputManager="*res://autoload/InputManager.gd"
 AudioManager="*res://autoload/AudioManager.gd"
 SaveManager="*res://autoload/SaveManager.gd"

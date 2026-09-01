@@ -46,11 +46,21 @@ func _ready() -> void:
 	add_child(play_btn)
 	UIUtil.pop_in(play_btn, 0.1)
 
+	var party_btn := UIUtil.make_soft_button("PARTY MODE", 26, Palette.PARTY_PRIMARY)
+	party_btn.add_theme_color_override("font_color", Palette.SURFACE)
+	party_btn.add_theme_color_override("font_hover_color", Palette.SURFACE)
+	party_btn.add_theme_color_override("font_pressed_color", Palette.SURFACE)
+	party_btn.custom_minimum_size = Vector2(420, 84)
+	party_btn.position = Vector2(Field.mid_x() - 210, 346)
+	party_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/party_select/PartyGameSelect.tscn"))
+	add_child(party_btn)
+	UIUtil.pop_in(party_btn, 0.15)
+
 	var remove_ads_btn := UIUtil.make_soft_button(
 		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22, Palette.SURFACE
 	)
 	remove_ads_btn.custom_minimum_size = Vector2(280, 64)
-	remove_ads_btn.position = Vector2(Field.mid_x() - 140, 356)
+	remove_ads_btn.position = Vector2(Field.mid_x() - 140, 448)
 	remove_ads_btn.disabled = SaveManager.ad_free
 	remove_ads_btn.pressed.connect(_on_remove_ads_pressed)
 	add_child(remove_ads_btn)

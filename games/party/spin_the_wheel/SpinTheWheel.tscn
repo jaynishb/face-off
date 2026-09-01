@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://games/party/spin_the_wheel/SpinTheWheel.gd" id="1"]
+
+[node name="SpinTheWheel" type="Node2D"]
+script = ExtResource("1")
