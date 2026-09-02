@@ -7,12 +7,17 @@ func _ready() -> void:
 	UIUtil.gradient_bg(self, Palette.GRADIENT_RESULTS_TOP, Palette.GRADIENT_RESULTS_BOTTOM)
 	AudioManager.play_menu_music()
 
+	# Vertically centers the whole content block in portrait instead of
+	# leaving it pinned to the top with empty space below -- see
+	# Field.shell_top_offset(). 0 in landscape, so no change there.
+	var y := Field.shell_top_offset()
+
 	var winner: int = GameManager.last_winner
 	var title_text := "DRAW!" if winner == 0 else "PLAYER %d WINS!" % winner
 	var title_color := Palette.ACCENT if winner == 0 else Palette.for_player(winner)
 
 	var title := UIUtil.make_label(title_text, 56, title_color)
-	title.position = Vector2(0, 100)
+	title.position = Vector2(0, 100 + y)
 	title.size = Vector2(Field.width(), 80)
 	add_child(title)
 
@@ -20,7 +25,7 @@ func _ready() -> void:
 	var tally_card := Panel.new()
 	tally_card.add_theme_stylebox_override("panel", UIUtil.soft_panel_style(Palette.SURFACE, 24.0))
 	tally_card.custom_minimum_size = Vector2(360, 56)
-	tally_card.position = Vector2(Field.mid_x() - 180, 210)
+	tally_card.position = Vector2(Field.mid_x() - 180, 210 + y)
 	add_child(tally_card)
 
 	var tally_label := UIUtil.make_label(
@@ -32,13 +37,13 @@ func _ready() -> void:
 
 	var rematch_btn := UIUtil.make_soft_button("REMATCH", 40, Palette.SUCCESS)
 	rematch_btn.custom_minimum_size = Vector2(440, 140)
-	rematch_btn.position = Vector2(Field.mid_x() - 380, 420)
+	rematch_btn.position = Vector2(Field.mid_x() - 380, 420 + y)
 	rematch_btn.pressed.connect(_on_rematch_pressed)
 	add_child(rematch_btn)
 
 	var menu_btn := UIUtil.make_soft_button("MENU", 32, Palette.SURFACE)
 	menu_btn.custom_minimum_size = Vector2(280, 100)
-	menu_btn.position = Vector2(Field.mid_x() + 100, 440)
+	menu_btn.position = Vector2(Field.mid_x() + 100, 440 + y)
 	menu_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
 	add_child(menu_btn)
 

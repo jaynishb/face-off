@@ -30,6 +30,22 @@ const EDGE_MARGIN := 10.0
 ## DiceCountPrompt) center against this fixed baseline instead of height().
 const NOMINAL_HEIGHT := 720.0
 
+## Shell (non-gameplay) screens lay out their primary content against this
+## same 1280x720 baseline via absolute Y positions. On a portrait screen
+## height() grows well past 720 (see NOMINAL_HEIGHT above), which used to
+## leave that whole content block pinned to the top with a large empty void
+## below it -- confirmed on a real phone (jaynishb.github.io/Game Select:
+## the tile grid sat squeezed into the top third of the screen). Add this to
+## every shell screen's non-chrome Y position (and to a modal's centering,
+## alongside NOMINAL_HEIGHT) to vertically centre the content block in the
+## real visible height instead: 0 in landscape (height() == NOMINAL_HEIGHT
+## there, so no visual change at all), positive in portrait. Corner chrome
+## (a screen's own back/settings button, a modal's own close button) stays
+## pinned to the true screen corner and must NOT use this -- only the
+## primary content block does.
+func shell_top_offset() -> float:
+	return max(0.0, (height() - NOMINAL_HEIGHT) * 0.5)
+
 func rect() -> Rect2:
 	return get_viewport().get_visible_rect()
 

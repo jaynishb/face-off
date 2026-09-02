@@ -12,8 +12,13 @@ func _ready() -> void:
 	back_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
 	add_child(back_btn)
 
+	# Vertically centers the whole content block in portrait instead of
+	# leaving it pinned to the top with empty space below -- see
+	# Field.shell_top_offset(). 0 in landscape, so no change there.
+	var y := Field.shell_top_offset()
+
 	var title := UIUtil.make_label("CHOOSE A GAME", 40)
-	title.position = Vector2(0, 24)
+	title.position = Vector2(0, 24 + y)
 	title.size = Vector2(Field.width(), 60)
 	add_child(title)
 
@@ -21,7 +26,7 @@ func _ready() -> void:
 	# grid doesn't sit left of centre on a wider-than-16:9 screen (Field.gd).
 	var grid_width := 3 * 360.0 + 2 * 24.0
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(Field.mid_x() - grid_width * 0.5, 140)
+	scroll.position = Vector2(Field.mid_x() - grid_width * 0.5, 140 + y)
 	scroll.size = Vector2(grid_width, 520)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

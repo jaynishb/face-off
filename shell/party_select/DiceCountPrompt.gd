@@ -30,7 +30,7 @@ func show_prompt(initial_count: int) -> void:
 	style.set_content_margin_all(32)
 	card.add_theme_stylebox_override("panel", style)
 	card.custom_minimum_size = Vector2(480, 300)
-	card.position = Vector2(Field.mid_x() - 240, Field.NOMINAL_HEIGHT * 0.5 - 150)
+	card.position = Vector2(Field.mid_x() - 240, Field.shell_top_offset() + Field.NOMINAL_HEIGHT * 0.5 - 150)
 	add_child(card)
 	UIUtil.pop_in(card, 0.05)
 

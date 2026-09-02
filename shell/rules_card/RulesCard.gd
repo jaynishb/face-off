@@ -26,7 +26,7 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 	style.set_content_margin_all(32)
 	card.add_theme_stylebox_override("panel", style)
 	card.custom_minimum_size = Vector2(640, 420)
-	card.position = Vector2(Field.mid_x() - 320, Field.NOMINAL_HEIGHT * 0.5 - 210)
+	card.position = Vector2(Field.mid_x() - 320, Field.shell_top_offset() + Field.NOMINAL_HEIGHT * 0.5 - 210)
 	add_child(card)
 	UIUtil.pop_in(card, 0.05)
 

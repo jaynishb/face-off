@@ -13,14 +13,19 @@ func _ready() -> void:
 	back_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
 	add_child(back_btn)
 
+	# Vertically centers the whole content block in portrait instead of
+	# leaving it pinned to the top with empty space below -- see
+	# Field.shell_top_offset(). 0 in landscape, so no change there.
+	var y := Field.shell_top_offset()
+
 	var title := UIUtil.make_label("SETTINGS", 40)
-	title.position = Vector2(0, 24)
+	title.position = Vector2(0, 24 + y)
 	title.size = Vector2(Field.width(), 60)
 	add_child(title)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 20)
-	vbox.position = Vector2(Field.mid_x() - 200, 140)
+	vbox.position = Vector2(Field.mid_x() - 200, 140 + y)
 	vbox.size = Vector2(400, 400)
 	add_child(vbox)
 

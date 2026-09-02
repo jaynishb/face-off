@@ -14,6 +14,11 @@ func _ready() -> void:
 	GameManager.clear_session_tally()
 	AudioManager.play_menu_music()
 
+	# Vertically centers the whole content block in portrait instead of
+	# leaving it pinned to the top with empty space below -- see
+	# Field.shell_top_offset(). 0 in landscape, so no change there.
+	var y := Field.shell_top_offset()
+
 	# Plain ASCII text, not a symbol glyph -- the default engine font has no
 	# coverage for gear/emoji codepoints and silently draws a tofu box
 	# instead (same class of bug fixed for game-tile emoji; see CLAUDE.md).
@@ -28,20 +33,20 @@ func _ready() -> void:
 	# e.g. PRESET_CENTER with a hand-computed absolute position double-offsets
 	# the control (caught by an actual HTML5 export run -- see CLAUDE.md).
 	var title := UIUtil.make_label("FACE OFF", 68)
-	title.position = Vector2(0, 44)
+	title.position = Vector2(0, 44 + y)
 	title.size = Vector2(Field.width(), 90)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
 	UIUtil.pop_in(title, 0.0)
 
 	var subtitle := UIUtil.make_label("Two players. One phone. No wifi.", 22)
-	subtitle.position = Vector2(0, 128)
+	subtitle.position = Vector2(0, 128 + y)
 	subtitle.size = Vector2(Field.width(), 40)
 	add_child(subtitle)
 
 	var play_btn := UIUtil.make_soft_button("PLAY", 40, Palette.SUCCESS)
 	play_btn.custom_minimum_size = Vector2(420, 120)
-	play_btn.position = Vector2(Field.mid_x() - 210, 210)
+	play_btn.position = Vector2(Field.mid_x() - 210, 210 + y)
 	play_btn.pressed.connect(_on_play_pressed)
 	add_child(play_btn)
 	UIUtil.pop_in(play_btn, 0.1)
@@ -51,7 +56,7 @@ func _ready() -> void:
 	party_btn.add_theme_color_override("font_hover_color", Palette.SURFACE)
 	party_btn.add_theme_color_override("font_pressed_color", Palette.SURFACE)
 	party_btn.custom_minimum_size = Vector2(420, 84)
-	party_btn.position = Vector2(Field.mid_x() - 210, 346)
+	party_btn.position = Vector2(Field.mid_x() - 210, 346 + y)
 	party_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/party_select/PartyGameSelect.tscn"))
 	add_child(party_btn)
 	UIUtil.pop_in(party_btn, 0.15)
@@ -60,7 +65,7 @@ func _ready() -> void:
 		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22, Palette.SURFACE
 	)
 	remove_ads_btn.custom_minimum_size = Vector2(280, 64)
-	remove_ads_btn.position = Vector2(Field.mid_x() - 140, 448)
+	remove_ads_btn.position = Vector2(Field.mid_x() - 140, 448 + y)
 	remove_ads_btn.disabled = SaveManager.ad_free
 	remove_ads_btn.pressed.connect(_on_remove_ads_pressed)
 	add_child(remove_ads_btn)
@@ -68,11 +73,11 @@ func _ready() -> void:
 	# A soft brand-coloured glow behind each mascot -- the "smooth, clean"
 	# equivalent of the reference art's glowing/sparkling hero character,
 	# added before the mascots themselves so it renders behind them.
-	UIUtil.soft_glow(self, Palette.PLAYER_1, 260.0).position = Vector2(Field.mid_x() - 250, 480)
-	UIUtil.soft_glow(self, Palette.PLAYER_2, 260.0).position = Vector2(Field.mid_x() + 5, 480)
+	UIUtil.soft_glow(self, Palette.PLAYER_1, 260.0).position = Vector2(Field.mid_x() - 250, 480 + y)
+	UIUtil.soft_glow(self, Palette.PLAYER_2, 260.0).position = Vector2(Field.mid_x() + 5, 480 + y)
 
-	_p1_mascot = _build_mascot("res://shared/art/mascot_p1.svg", Vector2(Field.mid_x() - 220, 515), false)
-	_p2_mascot = _build_mascot("res://shared/art/mascot_p2.svg", Vector2(Field.mid_x() + 70, 515), true)
+	_p1_mascot = _build_mascot("res://shared/art/mascot_p1.svg", Vector2(Field.mid_x() - 220, 515 + y), false)
+	_p2_mascot = _build_mascot("res://shared/art/mascot_p2.svg", Vector2(Field.mid_x() + 70, 515 + y), true)
 	UIUtil.idle_float(_p1_mascot, 10.0, 1.6, 0.0)
 	UIUtil.idle_float(_p2_mascot, 10.0, 1.6, 0.3)
 
