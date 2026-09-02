@@ -19,6 +19,17 @@ extends Node
 const SCORE_BAR_HEIGHT := 64.0
 const EDGE_MARGIN := 10.0
 
+## The design canvas's baseline height (matches project.godot's
+## window/size/viewport_height). height() legitimately grows past this on a
+## portrait screen -- "expand" stretch keeps width pinned at the 1280 baseline
+## there and gives the *extra* vertical room to height() instead (the mirror
+## image of the wide-phone case this file's header comment describes). A
+## shell popup that vertically centers against height() would drift into that
+## empty extra space instead of staying near the top-anchored menu content
+## it's covering, so shell modals (RulesCard, MovieGuessSetupPrompt,
+## DiceCountPrompt) center against this fixed baseline instead of height().
+const NOMINAL_HEIGHT := 720.0
+
 func rect() -> Rect2:
 	return get_viewport().get_visible_rect()
 

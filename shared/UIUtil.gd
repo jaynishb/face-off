@@ -253,6 +253,18 @@ static func punch(node: Control) -> void:
 	t.tween_property(node, "scale", Vector2.ONE, 0.2) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
+## Web-only: toggles a class on the HTML shell's <body>, so the rotate-prompt
+## gate in export_presets.example.cfg's html/head_include only fires while an
+## actual match is running -- shell/menu screens are portrait-friendly and
+## should never be blocked by it (see MatchHost.gd/PartyHost.gd, the only
+## callers). A no-op on every other platform; JavaScriptBridge has nothing to
+## talk to there.
+static func set_web_match_active(active: bool) -> void:
+	if OS.get_name() != "Web":
+		return
+	var js := "document.body.classList.add('match-active')" if active else "document.body.classList.remove('match-active')"
+	JavaScriptBridge.eval(js)
+
 ## Cross-fades to a new scene instead of an instant cut, per CLAUDE.md's
 ## "Screen transitions <=200ms" rule -- every change_scene_to_file() call in
 ## the app should route through this rather than calling it directly.

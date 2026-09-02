@@ -6,7 +6,7 @@ Guidance for Claude Code (and any dev) working in this repo. Read `FACE_OFF_PRD.
 
 **Face Off** — a single mobile app containing 6 (launch) → 10 (post-launch) very short (20–60s) two-player games, both players playing simultaneously on one shared phone screen, split left/right. Fully offline. No login, no server, no network calls except the ad SDK.
 
-Landscape-locked. No portrait mode. No tablet layout. No online multiplayer, no AI opponent, no accounts, no cloud save — see PRD §13 for the full "out of scope" list. Don't build any of that even if it seems like a natural extension.
+Landscape-locked **during actual gameplay** — the split-screen physics genuinely needs the width. No tablet layout. No online multiplayer, no AI opponent, no accounts, no cloud save — see PRD §13 for the full "out of scope" list. Don't build any of that even if it seems like a natural extension. (Menus/shell screens are portrait-friendly on the web build as of the "Portrait support for shell screens" section below — that's a deliberate narrowing of the original "no portrait mode, anywhere" stance, not an oversight.)
 
 ## Engine & stack
 
@@ -300,6 +300,19 @@ The 6 (→10) launch games are all built around exactly two players, split-scree
 **Content authoring note**: the app is offline-only (no network calls except the ad SDK), so Movie Guess can't query a live movie database — `movies.json` is a hand-curated, generated-and-reviewed local dataset (215 entries across 1970s–2020s × English/Hindi/Korean, every decade×language bucket the filter UI can produce given a floor of a few entries so no combination dead-ends). It's real content sized for genuine replay value, not a placeholder, but it is not an exhaustive database — expanding it further is a content pass, not a code change (`PromptDeck` reads whatever's in the file).
 
 **Not touched, confirmed reusable as-is**: `RulesCard.gd`, `MatchTimer.gd`, `Juice.gd`, `Field.gd`, `InputManager.gd`, `GameManager.gd`, `AdManager.gd`.
+
+## Portrait support for shell screens
+
+The rotate-prompt gate described in "Mobile web layout + in-match exit" above used to fire unconditionally whenever the browser was in portrait — `@media (orientation: portrait) { #rotate-prompt { display: flex; } }`, with no awareness of which screen was actually showing. That blocked the *entire app* behind "turn your phone sideways" the instant it loaded in portrait, even though only the split-screen games (MatchHost/PartyHost) genuinely need landscape width — Main Menu, Game Select, Party Game Select, Rules Card, Settings, and Results all lay out fine in portrait as-is, since `window/stretch/aspect="expand"` never shrinks the design canvas below its 1280-wide base in either orientation (see "Playtest audit pass" above) — it only ever *adds* space on whichever axis has slack, so a portrait window just gets a much taller canvas at the same 1280-wide layout, not a squeezed one.
+
+Fix: the gate is now scoped to actual gameplay only.
+
+- `export_presets.example.cfg`'s CSS changed from `@media (orientation: portrait) { #rotate-prompt { ... } }` to `@media (orientation: portrait) { body.match-active #rotate-prompt { ... } }` — the prompt now also requires a `match-active` class on `<body>`.
+- `UIUtil.set_web_match_active(active: bool)` (new) toggles that class via `JavaScriptBridge.eval()`, since the static HTML/CSS shell has no visibility into which Godot scene is currently active otherwise. It's a no-op on every platform except Web (`OS.get_name() != "Web"` guard) — native builds don't have this HTML shell at all.
+- `MatchHost.gd` and `PartyHost.gd` call `UIUtil.set_web_match_active(true)` at the top of `_ready()` and `UIUtil.set_web_match_active(false)` in a new `_exit_tree()` — `_exit_tree()` rather than each individual navigation call site, so it fires no matter which of the several ways a player can leave a match (rematch, exit-to-menu, back button) actually gets used.
+- As before, `export_presets.cfg` is gitignored and `export_presets.example.cfg` is the tracked source of truth — copy it over on a fresh clone before exporting, and mirror any further Web-preset change back into it.
+
+**Native (Android/iOS) is unchanged and untouched by this**: `project.godot`'s `window/handheld/orientation="landscape"` is a single project-wide OS-level lock with no per-scene equivalent — switching it live between menu and match on a real device would need native platform code (Android's `screenOrientation` at runtime, etc.), which is out of reach from this environment for the same reason the rest of native export is (see Day 5 status: no SDK/NDK, no device, no export ever attempted). This section only fixes the web build's browser-side prompt, which was the literal "forced to stay landscape to even load the menu" complaint — native's behavior (whole app locked to landscape, no in-between prompt to begin with) hasn't changed and isn't claimed to have.
 
 ## Reference
 

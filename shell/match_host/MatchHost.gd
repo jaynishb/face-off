@@ -25,6 +25,7 @@ func _ready() -> void:
 	# with their own (STOP) filter. Caught by a real phone reporting "no
 	# controls" -- see CLAUDE.md.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UIUtil.set_web_match_active(true) # gates the web build's rotate-prompt to matches only
 	_bg = UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 	AudioManager.stop_music() # never music during a match -- see CLAUDE.md
 
@@ -68,6 +69,12 @@ func _ready() -> void:
 ## Floating pills rather than a solid bar across the top: a bar forces one
 ## surface colour over every game's ground, while pills sit on any of them and
 ## leave the playfield uninterrupted.
+## Leaving MatchHost by any route (rematch, exit-to-menu, X button) ends the
+## Node's lifetime, so this always fires -- unlike waiting on a specific
+## navigation call site.
+func _exit_tree() -> void:
+	UIUtil.set_web_match_active(false)
+
 func _build_score_bar() -> void:
 	var bar := Control.new()
 	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
