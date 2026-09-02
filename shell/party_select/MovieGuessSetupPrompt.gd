@@ -20,9 +20,9 @@ const DEFAULT_TIMER_SECONDS := 120
 signal confirmed
 
 var _deck := PromptDeck.new()
-var _era_chips: Array[Button] = []
-var _lang_chips: Array[Button] = []
-var _timer_chips: Array[Button] = []
+var _era_chips: Array[PanelContainer] = []
+var _lang_chips: Array[PanelContainer] = []
+var _timer_chips: Array[PanelContainer] = []
 
 func _ready() -> void:
 	layer = 60
@@ -75,6 +75,7 @@ func show_prompt(saved_filters: Dictionary) -> void:
 	content.add_child(era_flow)
 	for decade in _deck.distinct_values("decade"):
 		var chip := _make_chip(decade, saved_decades.has(decade))
+		chip.gui_input.connect(_on_chip_input.bind(chip, _toggle_multi_chip))
 		era_flow.add_child(chip)
 		_era_chips.append(chip)
 
@@ -85,6 +86,7 @@ func show_prompt(saved_filters: Dictionary) -> void:
 	content.add_child(lang_flow)
 	for language in _deck.distinct_values("language"):
 		var chip := _make_chip(language, saved_languages.has(language))
+		chip.gui_input.connect(_on_chip_input.bind(chip, _toggle_multi_chip))
 		lang_flow.add_child(chip)
 		_lang_chips.append(chip)
 
@@ -93,12 +95,10 @@ func show_prompt(saved_filters: Dictionary) -> void:
 	timer_flow.add_theme_constant_override("h_separation", 10)
 	timer_flow.add_theme_constant_override("v_separation", 10)
 	content.add_child(timer_flow)
-	var timer_group := ButtonGroup.new()
 	for option in TIMER_OPTIONS:
 		var chip := _make_chip(option.label, option.seconds == saved_timer)
 		chip.set_meta("seconds", option.seconds)
-		chip.toggle_mode = true
-		chip.button_group = timer_group
+		chip.gui_input.connect(_on_chip_input.bind(chip, _select_timer_chip))
 		timer_flow.add_child(chip)
 		_timer_chips.append(chip)
 
@@ -112,41 +112,82 @@ func show_prompt(saved_filters: Dictionary) -> void:
 	back_btn.pressed.connect(_on_cancel)
 	add_child(back_btn)
 
-## A small toggleable "pill" -- unselected: neutral surface + ink text;
-## selected: party-violet fill + surface text. Font colour is re-synced on
-## every toggle since Godot doesn't vary font colour by theme state on its own.
-func _make_chip(text: String, initially_selected: bool) -> Button:
-	var btn := Button.new()
-	btn.text = text
-	btn.toggle_mode = true
-	btn.button_pressed = initially_selected
-	btn.custom_minimum_size = Vector2(0, 48)
-	btn.add_theme_font_size_override("font_size", 20)
+## A small toggleable "pill" built from a plain PanelContainer + Label rather
+## than a toggle-mode Button. A Button resolves its rendered font colour and
+## stylebox from a combination of hover/pressed/focus state, and in practice
+## some combination reliably ends up uncovered -- reproduced repeatedly in
+## this HFlowContainer regardless of how many per-state colour/stylebox
+## overrides were added, rendering as fully invisible text on an otherwise
+## normal-looking pill. A Panel has exactly one stylebox slot and a Label
+## exactly one font colour -- neither has per-state resolution to get wrong,
+## so this sidesteps the whole bug class instead of chasing it further.
+## Selection state lives in metadata (`selected`) rather than a Button's
+## built-in `button_pressed`, and `_refresh_chip()` is the only place that
+## paints it.
+func _make_chip(text: String, initially_selected: bool) -> PanelContainer:
+	var chip := PanelContainer.new()
+	chip.mouse_filter = Control.MOUSE_FILTER_STOP
+	chip.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	chip.set_meta("selected", initially_selected)
 
 	var normal_style := UIUtil.soft_panel_style(Palette.SURFACE, 16.0)
 	var selected_style := UIUtil.soft_panel_style(Palette.PARTY_PRIMARY, 16.0)
-	for state in ["normal", "hover", "focus"]:
-		btn.add_theme_stylebox_override(state, normal_style)
-	for state in ["pressed", "hover_pressed"]:
-		btn.add_theme_stylebox_override(state, selected_style)
+	for s in [normal_style, selected_style]:
+		s.content_margin_left = 20.0
+		s.content_margin_right = 20.0
+		s.content_margin_top = 10.0
+		s.content_margin_bottom = 10.0
+	chip.set_meta("normal_style", normal_style)
+	chip.set_meta("selected_style", selected_style)
 
-	var sync_color := func():
-		var color := Palette.SURFACE if btn.button_pressed else Palette.INK
-		btn.add_theme_color_override("font_color", color)
-		btn.add_theme_color_override("font_hover_color", color)
-		btn.add_theme_color_override("font_pressed_color", color)
-	btn.toggled.connect(func(_p): sync_color.call())
-	sync_color.call()
+	var label := UIUtil.make_label(text, 20)
+	chip.add_child(label)
+	chip.set_meta("label", label)
 
-	UIUtil.wire_bounce(btn)
-	return btn
+	_refresh_chip(chip)
+	return chip
+
+func _refresh_chip(chip: PanelContainer) -> void:
+	var selected: bool = chip.get_meta("selected")
+	chip.add_theme_stylebox_override(
+		"panel", chip.get_meta("selected_style") if selected else chip.get_meta("normal_style")
+	)
+	var label: Label = chip.get_meta("label")
+	label.add_theme_color_override("font_color", Palette.SURFACE if selected else Palette.INK)
+
+## Common tap handler for all chips -- checks for an actual press (mouse or
+## touch) before calling the given `on_press` behaviour (multi-select toggle
+## or single-select group pick), so the chip reacts the same way on desktop
+## click and mobile tap.
+## Only InputEventScreenTouch, not InputEventMouseButton -- project.godot has
+## emulate_touch_from_mouse=true (see InputManager.gd, which follows the same
+## rule), so a single click/tap delivers BOTH a native mouse event and a
+## synthetic touch event. Reacting to both double-fires this handler per
+## click, which for a multi-select toggle means toggling on then immediately
+## back off -- the chip would silently never end up selected.
+func _on_chip_input(event: InputEvent, chip: PanelContainer, on_press: Callable) -> void:
+	if event is InputEventScreenTouch and event.pressed:
+		on_press.call(chip)
+		UIUtil.punch(chip)
+
+func _toggle_multi_chip(chip: PanelContainer) -> void:
+	chip.set_meta("selected", not chip.get_meta("selected"))
+	_refresh_chip(chip)
+
+## Timer chips are single-select -- picking one deselects every other.
+func _select_timer_chip(chip: PanelContainer) -> void:
+	for c in _timer_chips:
+		c.set_meta("selected", c == chip)
+		_refresh_chip(c)
 
 func _on_confirm() -> void:
-	var decades: Array = _era_chips.filter(func(b): return b.button_pressed).map(func(b): return b.text)
-	var languages: Array = _lang_chips.filter(func(b): return b.button_pressed).map(func(b): return b.text)
+	var decades: Array = _era_chips.filter(func(c): return c.get_meta("selected")) \
+		.map(func(c): return (c.get_meta("label") as Label).text)
+	var languages: Array = _lang_chips.filter(func(c): return c.get_meta("selected")) \
+		.map(func(c): return (c.get_meta("label") as Label).text)
 	var timer_seconds := DEFAULT_TIMER_SECONDS
 	for chip in _timer_chips:
-		if chip.button_pressed:
+		if chip.get_meta("selected"):
 			timer_seconds = chip.get_meta("seconds")
 			break
 	SaveManager.set_party_filter("movie_guess", {
