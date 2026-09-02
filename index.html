@@ -83,22 +83,19 @@ body {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
   html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1D2B36; overscroll-behavior: none; }
-  /* Only actual gameplay (MatchHost/PartyHost) is landscape-locked -- the
-     split-screen physics genuinely needs the width. Menus/shell screens work
-     fine in portrait and are never gated. A phone browser cannot force
-     landscape the way a native app can, and CSS-rotating the canvas itself
-     was tried and rejected: Godot's web input reads touch/click position off
-     the canvas's post-transform getBoundingClientRect() and maps it onto the
-     canvas's pre-transform pixel buffer, so a rotated canvas silently
-     scrambles every tap coordinate -- the same class of 'no controls' bug
-     fixed earlier in this project (see CLAUDE.md), just reintroduced for
-     portrait phones instead of fixed for all of them. So the canvas itself
-     is never transformed; instead a full-screen prompt covers it and asks
-     for a physical rotation, but only while body carries the 'match-active'
-     class -- toggled from GDScript (UIUtil.set_web_match_active(), called by
-     MatchHost/PartyHost's _ready()/_exit_tree()) via JavaScriptBridge.eval(),
-     since the HTML shell has no visibility into which Godot scene is
-     current otherwise. */
+  /* Face Off is PORTRAIT-locked: two players share one phone held upright
+     between them, with the top player's half rotated 180 degrees in-engine.
+     A phone browser cannot force an orientation the way a native app can,
+     and CSS-rotating the canvas itself was tried and rejected: Godot's web
+     input reads touch/click position off the canvas's post-transform
+     getBoundingClientRect() and maps it onto the canvas's pre-transform
+     pixel buffer, so a rotated canvas silently scrambles every tap
+     coordinate -- the 'no controls' bug this project has already shipped
+     once (see CLAUDE.md). So the canvas is never transformed; instead a
+     full-screen prompt covers it and asks for a physical rotation whenever
+     the viewport is in LANDSCAPE. Note the media query below is the
+     inverse of what it was pre-portrait -- it is easy to leave stale, and
+     nothing about it fails to compile if you do. */
   #rotate-prompt {
     display: none;
     position: fixed;
@@ -120,15 +117,15 @@ body {
     0%, 100% { transform: rotate(0deg); }
     50% { transform: rotate(90deg); }
   }
-  @media screen and (orientation: portrait) {
-    body.match-active #rotate-prompt { display: flex; }
+  @media screen and (orientation: landscape) {
+    #rotate-prompt { display: flex; }
   }
 </style>
 <script>
   window.addEventListener('DOMContentLoaded', function () {
     var prompt = document.createElement('div');
     prompt.id = 'rotate-prompt';
-    prompt.innerHTML = '<div class="icon">&#128241;</div><p>Turn your phone sideways --<br>this game needs the width.</p>';
+    prompt.innerHTML = '<div class="icon">&#128241;</div><p>Hold your phone upright --<br>Face Off is played in portrait, one player at each end.</p>';
     document.body.appendChild(prompt);
   });
 </script>
@@ -150,7 +147,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1254016,"index.wasm":43016933},"focusCanvas":true,"gdextensionLibs":[]};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":10848032,"index.wasm":35376909},"focusCanvas":true,"gdextensionLibs":[]};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
