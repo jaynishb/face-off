@@ -48,6 +48,7 @@ func _build_tile(game_id: String) -> Control:
 	# forcing every direct child to the same rect.
 	var tile := Control.new()
 	tile.custom_minimum_size = Vector2(360, 220)
+	tile.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 	var panel := Panel.new()
 	panel.add_theme_stylebox_override("panel", UIUtil.soft_panel_style(Palette.SURFACE, 24.0))
@@ -77,17 +78,27 @@ func _build_tile(game_id: String) -> Control:
 	# this self-corrects with no code change once the scene file lands.
 	var built := ResourceLoader.exists(meta.get("scene", ""))
 
-	var play_btn := UIUtil.make_soft_button("PLAY" if built else "SOON", 22, Palette.ACCENT if built else Palette.SURFACE)
-	play_btn.custom_minimum_size = Vector2(180, 64)
-	play_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	play_btn.disabled = not built
-	play_btn.pressed.connect(func(): _on_tile_pressed(game_id))
-	vbox.add_child(play_btn)
+	var badge := UIUtil.make_badge("PLAY" if built else "SOON", Palette.ACCENT if built else Palette.SURFACE, Palette.INK)
+	badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(badge)
 
 	var rules_btn := UIUtil.make_soft_round_button("?", 40, Palette.SURFACE)
 	rules_btn.position = Vector2(360 - 56, 8)
 	rules_btn.pressed.connect(func(): _show_rules(game_id))
 	tile.add_child(rules_btn)
+
+	# The whole tile is the tap target, not just the PLAY badge above -- a
+	# smaller hit area than the visible box the player already tapped to look
+	# at is an extra, unnecessary tap on mobile. Only InputEventScreenTouch,
+	# not InputEventMouseButton: project.godot has emulate_touch_from_mouse=
+	# true, so a single click/tap delivers both a native mouse event and a
+	# synthetic touch event, and reacting to both would double-fire this.
+	if built:
+		tile.gui_input.connect(func(event: InputEvent):
+			if event is InputEventScreenTouch and event.pressed:
+				UIUtil.punch(tile)
+				_on_tile_pressed(game_id)
+		)
 
 	return tile
 

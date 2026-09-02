@@ -91,6 +91,27 @@ static func make_soft_button(text: String, font_size: int = 28, bg_color: Color 
 	wire_bounce(btn)
 	return btn
 
+## A static, non-interactive pill label -- mouse_filter IGNORE so it never
+## intercepts taps meant for whatever it's layered on top of (e.g. a tile
+## that's the actual tap target). Built from a plain PanelContainer + Label,
+## not a Button: a Button resolves its rendered font colour from a
+## combination of hover/pressed/focus state, and some combination reliably
+## ends up uncovered in this project's Web/WASM export, rendering blank text
+## (see MovieGuessSetupPrompt's chip fix) -- a Panel has one stylebox slot and
+## a Label one font colour, so there's nothing left to get wrong.
+static func make_badge(text: String, bg_color: Color, text_color: Color) -> PanelContainer:
+	var badge := PanelContainer.new()
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := soft_panel_style(bg_color, 16.0)
+	style.content_margin_left = 20.0
+	style.content_margin_right = 20.0
+	style.content_margin_top = 10.0
+	style.content_margin_bottom = 10.0
+	badge.add_theme_stylebox_override("panel", style)
+	var label := make_label(text, 22, text_color)
+	badge.add_child(label)
+	return badge
+
 ## A circular soft icon button (back/close/settings) matching make_soft_button.
 static func make_soft_round_button(text: String, diameter: float = 56.0, bg_color: Color = Palette.SURFACE) -> Button:
 	var btn := make_soft_button(text, 22, bg_color)
