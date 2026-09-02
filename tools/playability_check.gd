@@ -103,23 +103,64 @@ func _check_diving() -> void:
 	)
 	g.queue_free()
 
+## Basketball is checked by SIMULATION, not by the closed-form range test above.
+##
+## The formula version passed this game while it was scoring 0 shots out of 4061,
+## for two compounding reasons: the minimum-energy shot arrives at the rim plane
+## with no speed left and so never falls THROUGH it, and comparing a diagonal drag's
+## full length against a vertical requirement credits power the shot does not have.
+## Firing the actual integration is the only honest test.
 func _check_basketball() -> void:
 	var g := _load("basketball")
-	var to_hoop: Vector2 = g.hoop_center - g.shoot_from
-	var pull: float = _max_pull_from(g.play_rect.get_center(), g.play_rect, to_hoop)
-	var available: float = minf(pull * g.FLICK_POWER, g.MAX_SHOT_SPEED)
-	var needed: float = _min_launch_speed(to_hoop, g.GRAVITY)
+	var scoring := 0
+	var directions := 0
+	for angle_deg in range(0, 360, 3):
+		var hit_this_direction := false
+		for length in range(20, 601, 10):
+			var pull: Vector2 = Vector2(length, 0).rotated(deg_to_rad(angle_deg))
+			# The drag must physically fit on the player's own half.
+			if not g.play_rect.has_point(g.play_rect.get_center() - pull):
+				continue
+			if _shot_scores(g, pull):
+				scoring += 1
+				hit_this_direction = true
+		if hit_this_direction:
+			directions += 1
+	_expect(scoring > 0, "basketball: NO drag scores -- the hoop cannot be hit at all")
+	# One working drag is not a game. The player needs a band wide enough to aim
+	# into, or every basket is an accident.
 	_expect(
-		available >= needed,
-		"basketball: hoop unreachable -- best flick %.0f px/s, needs %.0f px/s" % [available, needed],
-	)
-	# Reachable is not enough: a shot that must be within a few percent of maximum
-	# is a game nobody can play twice in a row.
-	_expect(
-		needed <= available * 0.85,
-		"basketball: every shot needs %.0f%% of maximum power" % [needed / available * 100.0],
+		directions >= 20,
+		"basketball: only %d of 120 sampled drag directions can score" % directions,
 	)
 	g.queue_free()
+
+## Replays Basketball's own _process integration for one flick.
+func _shot_scores(g, pull: Vector2) -> bool:
+	var rect: Rect2 = g.play_rect
+	var pos: Vector2 = g.shoot_from
+	var vel: Vector2 = (pull * g.FLICK_POWER).limit_length(g.MAX_SHOT_SPEED)
+	var delta := 1.0 / 60.0
+	for step in range(600):
+		var prev_y: float = pos.y
+		vel.y += g.GRAVITY * delta
+		pos += vel * delta
+		if pos.x - g.ball_radius < rect.position.x:
+			pos.x = rect.position.x + g.ball_radius
+			vel.x = absf(vel.x) * 0.7
+		elif pos.x + g.ball_radius > rect.end.x:
+			pos.x = rect.end.x - g.ball_radius
+			vel.x = -absf(vel.x) * 0.7
+		if pos.y - g.ball_radius < rect.position.y:
+			pos.y = rect.position.y + g.ball_radius
+			vel.y = absf(vel.y) * 0.7
+		var plane: float = g.hoop_center.y
+		if vel.y > 0.0 and prev_y < plane and pos.y >= plane:
+			if absf(pos.x - g.hoop_center.x) <= g.rim_half_width * g.RIM_TOLERANCE:
+				return true
+		if pos.y > rect.end.y + g.ball_radius:
+			return false
+	return false
 
 ## A tap pad that is drawn but not registered (or registered but not drawn) is the
 ## same class of bug as the input split disagreeing with the drawn split.
