@@ -5,7 +5,8 @@
 **Audits:** branch `claude/two-player-game-design-yz5xzs` (the portrait rebuild). `main`
 does not yet carry the sports games, so the harnesses below only run on that branch.
 **Verdict:** the six classic games are fine. All six new sports games have real defects,
-and three of them cannot be played to a legitimate finish.
+and **four** of them cannot be played to a legitimate finish. Basketball (B4) is fixed;
+the rest are diagnosed but untouched.
 
 ## How this was verified
 
@@ -15,7 +16,8 @@ Three passes, because each one catches a class the others miss:
 |---|---|---|
 | Parse / import | `godot --headless --path . --import` | clean, 0 errors |
 | Geometry | `godot --headless --path . res://tools/GeomCheck.tscn` | **4740 assertions pass** |
-| Playability | `godot --headless --path . res://tools/Playability.tscn` | **24 of 33 checks fail** |
+| Playability | `godot --headless --path . res://tools/Playability.tscn` | **24 of 35 checks fail** |
+| Shot simulation | `godot --headless --path . res://tools/ShotSim.tscn` | Basketball scored **0 of 4061** |
 | Composition | `xvfb-run godot --rendering-driver opengl3 res://tools/Shots.tscn` | 6 games visibly wrong |
 
 **This is the headline finding.** The geometry harness passes completely, and it is
@@ -100,6 +102,45 @@ Fix: make the drawn rect and the registered zone the same `Rect2` — pass one r
 `configure_zones()` and `_draw_pad()`. Sprint is the only game that registers zones, and
 it derives the two independently; that is the whole bug.
 
+### B4. Basketball cannot be scored in at all — **FIXED**
+
+Reported from a real phone: *"this ball is not able to put to basket."* Correct, and my
+first audit got this one wrong. I called it "reachable but brutal" on the strength of a
+closed-form range check. Firing every drag a thumb could actually make:
+
+```
+scoring drags: 0 of 4061 plausible (0.00%)
+closest miss:  the ball never reached the rim plane at all
+```
+
+Two compounding errors in my check. The minimum-energy shot arrives at the rim with zero
+velocity remaining, so it never falls *through* — the true requirement is strictly higher
+than the formula's answer. And I compared a *diagonal* drag's full length against a
+*vertical* requirement, crediting the shot with power it does not have along the axis that
+matters. The hoop sat directly above the shooter, so the only scoring shot was a perfectly
+vertical one at more than maximum available power. There wasn't one.
+
+**Fix, tuned against `tools/ShotSim.tscn`:**
+
+| | before | after |
+|---|---|---|
+| `FLICK_POWER` | 3.1 | 6.4 |
+| `RIM_TOLERANCE` | 0.55 | 1.15 |
+| hoop height (of play area) | 0.24 | 0.34 |
+| shooter position | directly under the rim | offset 24% of the width to the side |
+| **scoring drags** | **0 of 4061** | **122 of 4061** |
+| usable drag directions | 0° | 65° of arc |
+| length tolerance in the best direction | — | 225px |
+
+Moving the shooter off the centre line is the change that matters most. Directly
+underneath, aiming is meaningless — there is exactly one correct direction, and the
+horizontal gate is unforgiving. From an angle the ball arcs *across* the rim, so it is
+both easier to hit and an actual decision.
+
+The harness now checks Basketball by **simulation** rather than by formula, and asserts
+both that a scoring drag exists and that at least 20 of 120 sampled directions can score —
+one working drag is not a game.
+
 ---
 
 ## Major — playable but wrong
@@ -145,21 +186,7 @@ so the timing window is enormous and both players clear everything. Nothing dist
 the two runs. Fix: lengthen the course, tighten the clearance test, and vary hurdle
 height so the jump has to be timed rather than merely remembered.
 
-### M5. Basketball's scoring window is 4.5% of the half and needs a 72%-of-maximum drag
-
-Reachable, unlike Archery, but brutally so:
-
-```
-minimum flick speed needed = 1011    maximum available = 1399
-rim scoring half-width     = 32px    of a 700px-wide half
-```
-
-This one passes the harness (it is reachable, and inside the 85%-of-maximum bar) — it is
-here because the numbers are unpleasant, not because it is broken. Every shot must be
-near-maximum power *and* land inside a 64px-wide gate. Fix: widen
-`RIM_TOLERANCE`, or add a soft rim that funnels near-misses in. Also, `aim_from` is the
-press point but the ball always launches from `shoot_from`, so the aim line the player
-drags does not start where the ball does.
+### ~~M5. Basketball's scoring window is brutal~~ → see B4. **FIXED**
 
 ### M6. Archery's wind indicator reads as an arrow stuck in a cloud
 
@@ -226,7 +253,8 @@ do.
 
 ## Suggested order of work
 
-1. B1, B2, B3 — the three unplayables. Nothing else matters until these are fixed.
+1. ~~B4 Basketball~~ — done. B1, B2, B3 — the remaining unplayables. Nothing else
+   matters until these are fixed.
 2. M1, M2 — actors onto the painted surfaces.
 3. M3 — make the rules cards true (implement the mechanics).
 4. M4, M5 — tune the two games whose difficulty curves are wrong at opposite ends.

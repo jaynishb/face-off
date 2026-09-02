@@ -9,12 +9,26 @@ extends SplitGame
 
 const MATCH_SECONDS := 45.0
 const GRAVITY := 1500.0
-const FLICK_POWER := 3.1
+## Drag-to-launch-speed. Tuned against tools/ShotSim.tscn, which fires every drag a
+## thumb could make and counts the ones that score: at the original 3.1 the answer
+## was ZERO out of 4061, because the longest drag that fits on screen could not lift
+## the ball as far as the rim. A closed-form "is the hoop in range" check missed it
+## (the minimum-energy shot arrives at the rim with no speed left and never falls
+## through), so this constant is only ever changed with the simulator open.
+const FLICK_POWER := 6.4
 const MAX_SHOT_SPEED := 1500.0
 ## A shot counts when the ball crosses the rim's plane downward while inside the
 ## rim's span. Tested on the CROSSING rather than on overlap, so a ball resting
 ## against the rim can't tick the score repeatedly.
-const RIM_TOLERANCE := 0.55
+##
+## Slightly wider than 1.0, so the scoring gate is a little more generous than the
+## drawn rim: on a phone held between two people a shot that visually clips the ring
+## should drop, and a gate narrower than the art reads as the game cheating.
+const RIM_TOLERANCE := 1.15
+## Rim distance in from the seam, and the shooter's distance below it, both in
+## art-scale units so the shot is the same shot on every handset. See _on_layout().
+const HOOP_INSET := 155.0
+const SHOT_RISE := 209.0
 
 var hoop_center := Vector2.ZERO
 var rim_half_width := 46.0
@@ -45,8 +59,26 @@ func _init() -> void:
 func _on_layout() -> void:
 	ball_radius = 22.0 * art_scale
 	rim_half_width = 46.0 * art_scale
-	hoop_center = Vector2(play_rect.get_center().x, play_rect.position.y + play_rect.size.y * 0.24)
-	shoot_from = Vector2(play_rect.get_center().x, play_rect.end.y - 74.0 * art_scale)
+	# The hoop is anchored a FIXED distance in from the seam, and the shooter a fixed
+	# distance below the hoop -- neither is a fraction of the play height.
+	#
+	# Fractions were the bug: on a 20:9 phone the half is 25% taller, so the shot grew
+	# to 354px while MAX_SHOT_SPEED stayed put, and the same flick that scored on a
+	# 16:9 screen fell short on a tall one. Difficulty must not depend on the handset.
+	# Extra height now becomes empty court behind the shooter, which costs nothing.
+	hoop_center = Vector2(
+		play_rect.get_center().x,
+		play_rect.position.y + HOOP_INSET * art_scale,
+	)
+	# The shooter stands OFF to one side rather than directly under the rim. Straight
+	# underneath, the only scoring shot is a perfectly vertical one at near-maximum
+	# power, so aiming does nothing and the horizontal window is unforgiving. From an
+	# angle the ball arcs across the rim, which is both easier to hit and an actual
+	# aiming decision.
+	shoot_from = Vector2(
+		play_rect.get_center().x - play_rect.size.x * 0.24,
+		minf(hoop_center.y + SHOT_RISE * art_scale, play_rect.end.y - 40.0 * art_scale),
+	)
 	for player in [1, 2]:
 		if not ball_live[player]:
 			ball_pos[player] = shoot_from
