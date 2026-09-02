@@ -1503,5 +1503,460 @@
     "decade": "2020s",
     "language": "Korean",
     "difficulty": "medium"
+  },
+  {
+    "title": "The Conversation",
+    "year": 1974,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Badlands",
+    "year": 1973,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Don't Look Now",
+    "year": 1973,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Harold and Maude",
+    "year": 1971,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "The Wicker Man",
+    "year": 1973,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Two-Lane Blacktop",
+    "year": 1971,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Blue Velvet",
+    "year": 1986,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Repo Man",
+    "year": 1984,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Withnail and I",
+    "year": 1987,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Brazil",
+    "year": 1985,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "After Hours",
+    "year": 1985,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Local Hero",
+    "year": 1983,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Barton Fink",
+    "year": 1991,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Rushmore",
+    "year": 1998,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Safe",
+    "year": 1995,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Croupier",
+    "year": 1998,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Naked",
+    "year": 1993,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "The Sweet Hereafter",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Primer",
+    "year": 2004,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Elephant",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Brick",
+    "year": 2005,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Old Joy",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Morvern Callar",
+    "year": 2002,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "A Serious Man",
+    "year": 2009,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Witch",
+    "year": 2015,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "A Ghost Story",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Under the Skin",
+    "year": 2013,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Good Time",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Swiss Army Man",
+    "year": 2016,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "First Reformed",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "The Green Knight",
+    "year": 2021,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Aftersun",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Pearl",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Beau Is Afraid",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Saltburn",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Dream Scenario",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Ankur",
+    "year": 1974,
+    "decade": "1970s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Nishant",
+    "year": 1975,
+    "decade": "1970s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Jaane Bhi Do Yaaro",
+    "year": 1983,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Ardh Satya",
+    "year": 1983,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Mirch Masala",
+    "year": 1987,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Satya",
+    "year": 1998,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Is Raat Ki Subah Nahin",
+    "year": 1996,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Black Friday",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Dev.D",
+    "year": 2009,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Manorama Six Feet Under",
+    "year": 2007,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Ship of Theseus",
+    "year": 2013,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Titli",
+    "year": 2014,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Tumbbad",
+    "year": 2018,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Masaan",
+    "year": 2015,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Eeb Allay Ooo!",
+    "year": 2019,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Article 15",
+    "year": 2019,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Sherni",
+    "year": 2021,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Sardar Udham",
+    "year": 2021,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Faraaz",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Chilsu and Mansu",
+    "year": 1988,
+    "decade": "1980s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Peppermint Candy",
+    "year": 1999,
+    "decade": "1990s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Save the Green Planet!",
+    "year": 2003,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "A Bittersweet Life",
+    "year": 2005,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "The Chaser",
+    "year": 2008,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Mother",
+    "year": 2009,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Poetry",
+    "year": 2010,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Right Now, Wrong Then",
+    "year": 2015,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Peninsula",
+    "year": 2020,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Cobweb",
+    "year": 2023,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "hard"
   }
 ]
