@@ -375,12 +375,43 @@ Bugs found and fixed by actually looking at the rendered screen (none were visib
   the largest roughly-*circular* blob, which is what separates a paddle from a wide goal
   mouth or a capsule-shaped pill.
 
+## Art pack (installed)
+
+The 68 PNGs described by `shared/art/manifest.json` are in `shared/art/`. `ASSET_PROMPTS.md`
+remains the source of truth for regenerating any of them — keep the two files in sync.
+
+- **`shared/Art.gd`** is the only way art is loaded: cached, and **guarded** so a missing file
+  returns `null` and the caller falls back to the procedural `_draw()` look. That fallback is
+  not dead code — it is what lets a partial or reverted pack degrade instead of crash, and it
+  is why deleting a PNG is a data change rather than a code change.
+- **`Juice.sprite/cover/tile_h`** all take an explicit `base` transform and restore it.
+  `draw_set_transform*` **replaces** the canvas transform rather than composing with it, so a
+  helper that set it directly would clobber the player transform a SPLIT game draws under and
+  put the sprite on the wrong half, right way up. `SplitGame` wraps them so subclasses never
+  have to remember.
+- **`project.godot` enables mipmaps project-wide.** The pack ships at 2–3× on-screen size, so
+  everything is minified and thin outlines shimmer without them. It is a project-wide default
+  because `.import` files are gitignored and a per-file setting would vanish on a fresh clone.
+- **The games own their playfield geometry; the art is scenery.** Which band of a cropped
+  background lands under a given local y depends on the viewport, so anything the rules depend
+  on (Sprint's lane, Diving's water line, Basketball's rim plane) is still drawn or positioned
+  by code. Trusting the crop put Sprint's runner on the infield grass.
+
+Two Godot defaults bit hard here, both invisible in the code and both found by looking at the
+rendered screen:
+
+- **`TextureRect` defaults to `EXPAND_KEEP_SIZE`**, which reports the SOURCE texture's size as
+  the control's *minimum*. `custom_minimum_size` is a floor, never a cap — so 600×450
+  thumbnails burst out of their cards over the controls beneath, and 256px icons laid
+  themselves out at 256px inside 52px discs with their strokes entirely off the button, which
+  rendered every icon button as an empty circle. **Always set `EXPAND_IGNORE_SIZE`.**
+- **`Control` defaults to `MOUSE_FILTER_STOP`**, and that is not only a MatchHost problem: on
+  Game Select the card, the `GridContainer` and the `VBoxContainer` each swallowed the drag
+  before the `ScrollContainer` saw it, so the list could only be scrolled from the thin gaps
+  between cards. Every Control between a ScrollContainer and its content needs `IGNORE`.
+
 **Still outstanding:**
 
-- **Generated art.** `ASSET_PROMPTS.md` and `shared/art/manifest.json` specify ~60 images;
-  none exist yet, so every game still renders `_draw()` primitives and sports cards show a
-  neutral placeholder where their thumbnail goes. The art-integration pass is Stage 5 of the
-  plan and is gated on those files landing.
 - **No project theme** registers the bundled fonts, so the ASCII-only rule still applies.
 - **Native Android/iOS** export, AdMob SDK binding, platform IAP, store assets and signing —
   all unchanged from the Day 5 notes above. Multi-touch is confirmed in the Web build only;

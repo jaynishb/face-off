@@ -22,7 +22,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOT = path.resolve('build/web');
+const ROOT = path.resolve(process.env.PLAYTEST_ROOT || 'build/web');
 const PORT = 8099;
 const VIEWPORT = { width: 390, height: 844 }; // a portrait phone, ~19.5:9
 
