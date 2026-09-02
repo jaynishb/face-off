@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-02
 **Scope:** all 12 games, verified by running them, not by reading them.
+**Audits:** branch `claude/two-player-game-design-yz5xzs` (the portrait rebuild). `main`
+does not yet carry the sports games, so the harnesses below only run on that branch.
 **Verdict:** the six classic games are fine. All six new sports games have real defects,
 and three of them cannot be played to a legitimate finish.
 
