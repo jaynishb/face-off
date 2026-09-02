@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Face Off"
-config/description="Two players, one phone, no wifi. Six fast head-to-head games on a single screen."
+config/description="Two players, one phone, no wifi. Twelve fast head-to-head games on a single screen."
 run/main_scene="res://shell/main_menu/MainMenu.tscn"
 config/features=PackedStringArray("4.3", "Mobile")
 boot_splash/bg_color=Color(1, 0.956863, 0.878431, 1)
@@ -28,11 +28,11 @@ AdManager="*res://autoload/AdManager.gd"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=720
+window/size/viewport_height=1280
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/handheld/orientation="landscape"
+window/handheld/orientation="portrait"
 window/energy_saving/keep_screen_on=true
 
 [input_devices]

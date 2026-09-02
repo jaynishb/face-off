@@ -13,7 +13,10 @@ signal dismissed
 func _ready() -> void:
 	layer = 60
 
-func show_rules(display_name: String, rules_text: String, icon_path: String = "") -> void:
+## mirrored draws one card per half, each facing its own player -- for anywhere
+## two players are both looking at the phone (in-match). Left false for Game
+## Select, where one person is browsing and a single upright card is correct.
+func show_rules(display_name: String, rules_text: String, icon_path: String = "", mirrored: bool = false) -> void:
 	var dim := ColorRect.new()
 	dim.color = Color(Palette.INK, 0.0)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -21,22 +24,50 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 	var dim_tween := dim.create_tween()
 	dim_tween.tween_property(dim, "color", Color(Palette.INK, 0.45), 0.2)
 
+	if mirrored:
+		UIUtil.mirror_for_players(self, func(_player: int) -> Control:
+			var half := Field.half_size()
+			var holder := Control.new()
+			holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			holder.size = half
+			var c := _build_card(display_name, rules_text, icon_path)
+			var w: float = minf(half.x - 40.0, 560.0)
+			c.custom_minimum_size = Vector2(w, half.y * 0.72)
+			c.position = Vector2((half.x - w) * 0.5, half.y * 0.12)
+			holder.add_child(c)
+			UIUtil.pop_in(c, 0.05)
+			return holder
+		)
+	else:
+		var card := _build_card(display_name, rules_text, icon_path)
+		var w: float = minf(Field.width() - 48.0, 600.0)
+		var h: float = minf(Field.height() * 0.56, 520.0)
+		card.custom_minimum_size = Vector2(w, h)
+		card.position = Vector2((Field.width() - w) * 0.5, (Field.height() - h) * 0.5)
+		add_child(card)
+		UIUtil.pop_in(card, 0.05)
+
+		var close_btn := UIUtil.make_button("X", 22, Palette.SURFACE)
+		close_btn.custom_minimum_size = Vector2(56, 56)
+		close_btn.position = Vector2(Field.width() - 80, Field.SAFE_OUTER + 12)
+		close_btn.pressed.connect(_on_dismiss)
+		add_child(close_btn)
+
+func _build_card(display_name: String, rules_text: String, icon_path: String) -> PanelContainer:
 	var card := PanelContainer.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Palette.SURFACE
 	style.set_corner_radius_all(28)
-	style.set_content_margin_all(32)
+	style.set_content_margin_all(28)
+	style.border_color = Palette.OUTLINE
+	style.set_border_width_all(4)
 	card.add_theme_stylebox_override("panel", style)
-	card.custom_minimum_size = Vector2(640, 420)
-	card.position = Vector2(Field.mid_x() - 320, Field.height() * 0.5 - 210)
-	add_child(card)
-	UIUtil.pop_in(card, 0.05)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 20)
 	card.add_child(vbox)
 
-	var title := UIUtil.make_label(display_name.to_upper(), 40)
+	var title := UIUtil.make_label(display_name.to_upper(), 34)
 	vbox.add_child(title)
 
 	var diagram := ColorRect.new()
@@ -63,11 +94,7 @@ func show_rules(display_name: String, rules_text: String, icon_path: String = ""
 	got_it.pressed.connect(_on_dismiss)
 	vbox.add_child(got_it)
 
-	var close_btn := UIUtil.make_button("X", 22, Palette.SURFACE)
-	close_btn.custom_minimum_size = Vector2(56, 56)
-	close_btn.position = Vector2(Field.width() - 80, 24)
-	close_btn.pressed.connect(_on_dismiss)
-	add_child(close_btn)
+	return card
 
 func _on_dismiss() -> void:
 	dismissed.emit()

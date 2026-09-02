@@ -1,107 +1,173 @@
 extends Control
-## Game Select — chunky tiles, one per launch-roster game, each with its own
-## [?] rules button. Tapping a tile the first time auto-opens the rules card
-## before starting; subsequent taps launch straight in.
+## Game Select — chunky cards, two to a row, grouped under CLASSIC and SPORTS
+## headers, each with its own [?] rules button. Tapping a card the first time
+## auto-opens the rules card before starting; subsequent taps launch straight in.
+##
+## Portrait: the list scrolls vertically rather than horizontally, and the column
+## count and card size are derived from the live viewport. Single-orientation —
+## one person is picking a game, so nothing here is mirrored.
+
+const COLUMNS := 2
+
+var _scroll: ScrollContainer
+var _column: VBoxContainer
+var _back_btn: Button
+var _title: Label
+var _cards: Array[Control] = []
+var _grids: Array[GridContainer] = []
 
 func _ready() -> void:
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 	AudioManager.play_menu_music()
 
-	var back_btn := UIUtil.make_button("<", 28, Palette.SURFACE)
-	back_btn.custom_minimum_size = Vector2(64, 64)
-	back_btn.position = Vector2(24, 24)
-	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
-	add_child(back_btn)
+	_back_btn = UIUtil.make_button("<", 28, Palette.SURFACE)
+	_back_btn.custom_minimum_size = Vector2(64, 64)
+	_back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
+	add_child(_back_btn)
 
-	var title := UIUtil.make_label("CHOOSE A GAME", 40)
-	title.position = Vector2(0, 24)
-	title.size = Vector2(Field.width(), 60)
-	add_child(title)
+	_title = UIUtil.make_label("CHOOSE A GAME", 36)
+	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_title)
 
-	# Centred on the real visible rect, not a fixed 1280-wide box, so the tile
-	# grid doesn't sit left of centre on a wider-than-16:9 screen (Field.gd).
-	var grid_width := 3 * 360.0 + 2 * 24.0
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(Field.mid_x() - grid_width * 0.5, 140)
-	scroll.size = Vector2(grid_width, 520)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
+	_scroll = ScrollContainer.new()
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	add_child(_scroll)
 
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 24)
-	grid.add_theme_constant_override("v_separation", 24)
-	scroll.add_child(grid)
+	_column = VBoxContainer.new()
+	_column.add_theme_constant_override("separation", 18)
+	_scroll.add_child(_column)
 
 	var index := 0
-	for game_id in GameManager.get_roster():
-		var tile := _build_tile(game_id)
-		grid.add_child(tile)
-		UIUtil.pop_in(tile, index * 0.06)
-		index += 1
+	for category in GameManager.get_categories():
+		_column.add_child(_build_section_header(category.name))
+		var grid := GridContainer.new()
+		grid.columns = COLUMNS
+		grid.add_theme_constant_override("h_separation", 16)
+		grid.add_theme_constant_override("v_separation", 16)
+		_column.add_child(grid)
+		_grids.append(grid)
 
-func _build_tile(game_id: String) -> Control:
+		for game_id: String in category.games:
+			var card := _build_card(game_id)
+			grid.add_child(card)
+			_cards.append(card)
+			UIUtil.pop_in(card, index * 0.04)
+			index += 1
+
+	get_viewport().size_changed.connect(_relayout)
+	_relayout()
+
+## Every screen-derived size in one place. Card width follows the viewport, so
+## the grid never sits off-centre or overflows on a narrow or a 20:9 phone.
+func _relayout() -> void:
+	var w := Field.width()
+	var h := Field.height()
+	var margin := 22.0
+	var top := Field.SAFE_OUTER + 12.0
+
+	_back_btn.position = Vector2(margin, top)
+	_title.position = Vector2(0, top + 12)
+	_title.size = Vector2(w, 56)
+
+	var content_w := w - margin * 2.0
+	_scroll.position = Vector2(margin, top + 88)
+	_scroll.size = Vector2(content_w, h - (top + 88) - Field.SAFE_OUTER - 12.0)
+
+	var card_w := (content_w - 16.0 * (COLUMNS - 1)) / COLUMNS
+	var card_h := card_w * 0.86
+	for card in _cards:
+		card.custom_minimum_size = Vector2(card_w, card_h)
+
+func _build_section_header(text: String) -> Control:
+	var header := UIUtil.make_label(text, 22, Color(Palette.INK, 0.65))
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	header.custom_minimum_size = Vector2(0, 34)
+	return header
+
+func _build_card(game_id: String) -> Control:
 	var meta := GameManager.get_game_meta(game_id)
 
-	# Plain Control root (not a Container) so the background panel and the
-	# corner [?] button can both be positioned freely without a Container
-	# forcing every direct child to the same rect.
-	var tile := Control.new()
-	tile.custom_minimum_size = Vector2(360, 220)
+	# Plain Control root (not a Container) so the background panel and the corner
+	# [?] button can both be positioned freely without a Container forcing every
+	# direct child to the same rect.
+	var card := Control.new()
 
 	var panel := Panel.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Palette.SURFACE
 	style.set_corner_radius_all(24)
+	style.border_color = Palette.OUTLINE
+	style.set_border_width_all(4)
+	style.shadow_color = Color(0, 0, 0, 0.16)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 5)
 	panel.add_theme_stylebox_override("panel", style)
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	tile.add_child(panel)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.add_theme_constant_override("separation", 12)
-	tile.add_child(vbox)
+	vbox.add_theme_constant_override("separation", 8)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(vbox)
 
-	var icon := TextureRect.new()
-	icon.texture = load(meta.get("icon", ""))
-	icon.custom_minimum_size = Vector2(72, 72)
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	icon.pivot_offset = Vector2(36, 36)
-	vbox.add_child(icon)
-	UIUtil.idle_wobble(icon, randf() * 0.6)
+	# Thumbnails and icons are generated art that may not have landed yet, so
+	# every load is guarded -- a missing file leaves a blank slot, never a crash.
+	var art_path := _card_art_path(game_id, meta)
+	if art_path != "":
+		var icon := TextureRect.new()
+		icon.texture = load(art_path)
+		icon.custom_minimum_size = Vector2(84, 84)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		icon.pivot_offset = Vector2(42, 42)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(icon)
+		UIUtil.idle_wobble(icon, randf() * 0.6)
 
-	var name_label := UIUtil.make_label(meta.get("display_name", game_id), 24)
+	var name_label := UIUtil.make_label(meta.get("display_name", game_id), 20)
 	vbox.add_child(name_label)
 
-	# Games not yet built (later PRD build-order days) render as a disabled
-	# "Coming Soon" tile instead of a PLAY button that would fail to load —
-	# this self-corrects with no code change once the scene file lands.
+	# Games not yet built render as a disabled "SOON" card instead of a PLAY
+	# button that would fail to load -- this self-corrects with no code change
+	# once the scene file lands.
 	var built := ResourceLoader.exists(meta.get("scene", ""))
 
-	var play_btn := UIUtil.make_button("PLAY" if built else "SOON", 22, Palette.ACCENT if built else Palette.SURFACE)
-	play_btn.custom_minimum_size = Vector2(180, 64)
+	var play_btn := UIUtil.make_button("PLAY" if built else "SOON", 20, Palette.ACCENT if built else Palette.SURFACE)
+	play_btn.custom_minimum_size = Vector2(126, 52)
 	play_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	play_btn.disabled = not built
-	play_btn.pressed.connect(func(): _on_tile_pressed(game_id))
+	play_btn.pressed.connect(func(): _on_card_pressed(game_id))
 	vbox.add_child(play_btn)
 
-	var rules_btn := UIUtil.make_button("?", 20, Palette.SURFACE)
-	rules_btn.custom_minimum_size = Vector2(40, 40)
-	rules_btn.position = Vector2(360 - 56, 8)
+	var rules_btn := UIUtil.make_button("?", 18, Palette.SURFACE)
+	rules_btn.custom_minimum_size = Vector2(38, 38)
+	rules_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	rules_btn.pressed.connect(func(): _show_rules(game_id))
-	tile.add_child(rules_btn)
+	card.add_child(rules_btn)
 
-	return tile
+	return card
 
-func _on_tile_pressed(game_id: String) -> void:
+## Prefer the generated thumbnail from shared/art/manifest.json; fall back to the
+## hand-authored vector icon; otherwise draw nothing.
+func _card_art_path(game_id: String, meta: Dictionary) -> String:
+	var thumb := "res://shared/art/thumbs/%s.png" % game_id
+	if ResourceLoader.exists(thumb):
+		return thumb
+	var icon: String = meta.get("icon", "")
+	if icon != "" and ResourceLoader.exists(icon):
+		return icon
+	return ""
+
+func _on_card_pressed(game_id: String) -> void:
 	if not SaveManager.has_seen_rules(game_id):
 		var card := RulesCard.new()
 		add_child(card)
 		var meta := GameManager.get_game_meta(game_id)
-		card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""), meta.get("icon", ""))
+		card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""), _card_art_path(game_id, meta))
 		SaveManager.mark_rules_seen(game_id)
 		card.dismissed.connect(func(): _launch(game_id))
 	else:
@@ -111,7 +177,7 @@ func _show_rules(game_id: String) -> void:
 	var card := RulesCard.new()
 	add_child(card)
 	var meta := GameManager.get_game_meta(game_id)
-	card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""), meta.get("icon", ""))
+	card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""), _card_art_path(game_id, meta))
 
 func _launch(game_id: String) -> void:
 	GameManager.pending_game_id = game_id

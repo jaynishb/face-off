@@ -1,25 +1,35 @@
 extends MiniGame
-## Tap Race — alternate-tap your two buttons (top/bottom of your half) to
-## accelerate. Mashing one button only gives a small "mash" boost, not the
-## full "alternate" boost, so spamming a single finger degrades instead of
-## winning. Trailing player gets a small rubber-band boost to keep it close.
+## Tap Race — alternate-tap your two buttons to accelerate. Mashing one button
+## only gives a small "mash" boost, not the full "alternate" boost, so spamming a
+## single finger degrades instead of winning. The trailing player gets a small
+## rubber-band boost to keep it close.
+##
+## SPLIT mode, and the game that the whole per-player coordinate space exists
+## for. Each player has their own private lane and their own two buttons, and
+## never looks at the opponent's half — so the half is authored exactly once, in
+## Field's PLAYER space, and drawn twice under Field.player_xform(). Player 2's
+## copy comes out rotated by PI and therefore right-way-up to them.
+##
+## Because both halves are one piece of geometry, the two players' zone rects are
+## literally the same Rect2. CLAUDE.md's "identical control area, identical visual
+## weight for both players" stops being something to police in review and becomes
+## structurally impossible to violate.
 
-const ZONE_TOP := 1
-const ZONE_BOTTOM := 2
+const ZONE_NEAR := 1  ## the button nearer the seam, in the player's own view
+const ZONE_FAR := 2   ## the button nearer their own screen edge
 
 const FINISH := 1000.0
 const ALTERNATE_BOOST := 26.0
 const MASH_BOOST := 6.0
 const RUBBER_BAND_MAX := 0.4
 
-## Geometry from the real visible rect -- see Field.gd. Each player gets their
-## own lane inside their own half, running between their own two buttons,
-## rather than one lane spanning the whole screen: a player should watch their
-## car on their side, not track it across the opponent's controls.
+# All geometry below is in PLAYER space (see Field.gd) and shared by both
+# players -- there is deliberately no per-player variant of any of it.
 var lane_y := 0.0
-var track_start := {1: 0.0, 2: 0.0}
-var track_end := {1: 0.0, 2: 0.0}
-var _zone_rects := {} # "player_zone" -> Rect2, so _draw can render the buttons
+var track_start := 0.0
+var track_end := 0.0
+var _button_rects := {} # zone -> Rect2, so _draw can render what input listens to
+var _car_scale := 1.0
 
 var progress := {1: 0.0, 2: 0.0}
 var _last_zone := {1: 0, 2: 0}
@@ -32,32 +42,38 @@ func _init() -> void:
 	rules_text = "Tap your two buttons as fast as you can.\nFirst to the finish wins!"
 	match_duration = 0.0
 	theme_bg = Palette.BG_TAP_RACE
+	view_mode = ViewMode.SPLIT
+	input_space = InputManager.Space.PLAYER
 
-## Lanes AND the InputManager zone rects are both derived from the viewport,
-## so a resize has to re-register the zones -- stale zone rects would leave the
-## tap buttons drawn in one place and listening in another (see
-## MiniGame.layout).
+## Lanes AND the InputManager zone rects are both derived from the viewport, so
+## a resize has to re-register the zones -- stale zone rects would leave the tap
+## buttons drawn in one place and listening in another (see MiniGame.layout).
 func layout() -> void:
-	var top := Field.top()
-	var bottom := Field.bottom()
-	var mid := Field.mid_x()
-	var half_h := (bottom - top) * 0.5
+	var half := Field.half_size()
+	var inner := Field.SEAM_BAND * 0.5
+	var outer := Field.SAFE_OUTER + Field.EDGE_MARGIN
+	var usable := Rect2(
+		Field.EDGE_MARGIN, inner,
+		half.x - Field.EDGE_MARGIN * 2.0, half.y - inner - outer,
+	)
 
-	lane_y = top + half_h
-	track_start[1] = Field.left() + 46.0
-	track_end[1] = mid - 34.0
-	track_start[2] = mid + 34.0
-	track_end[2] = Field.right() - 46.0
+	var band := usable.size.y * 0.36
+	_button_rects = {
+		ZONE_NEAR: Rect2(usable.position, Vector2(usable.size.x, band)),
+		ZONE_FAR: Rect2(Vector2(usable.position.x, usable.end.y - band), Vector2(usable.size.x, band)),
+	}
 
-	var zones := [
-		{"player": 1, "zone": ZONE_TOP, "rect": Rect2(Field.left(), top, mid - Field.left(), half_h)},
-		{"player": 1, "zone": ZONE_BOTTOM, "rect": Rect2(Field.left(), top + half_h, mid - Field.left(), half_h)},
-		{"player": 2, "zone": ZONE_TOP, "rect": Rect2(mid, top, Field.right() - mid, half_h)},
-		{"player": 2, "zone": ZONE_BOTTOM, "rect": Rect2(mid, top + half_h, Field.right() - mid, half_h)},
-	]
+	lane_y = usable.position.y + usable.size.y * 0.5
+	_car_scale = clampf(usable.size.x / 560.0, 0.7, 1.25)
+	track_start = usable.position.x + 46.0 * _car_scale
+	track_end = usable.end.x - 46.0 * _car_scale
+
+	# Both players get the identical rects, in their own local space.
+	var zones := []
+	for player in [1, 2]:
+		for zone in [ZONE_NEAR, ZONE_FAR]:
+			zones.append({"player": player, "zone": zone, "rect": _button_rects[zone]})
 	InputManager.configure_zones(zones)
-	for z in zones:
-		_zone_rects["%d_%d" % [z.player, z.zone]] = z.rect
 	queue_redraw()
 
 func setup(_config: Dictionary) -> void:
@@ -77,7 +93,7 @@ func _process(delta: float) -> void:
 		_flash.erase(key)
 	queue_redraw()
 
-func _on_touch(player: int, zone: int, _position: Vector2) -> void:
+func _on_touch(player: int, zone: int, _position: Vector2, _screen: Vector2) -> void:
 	if not _match_active or zone == InputManager.NO_ZONE:
 		return
 
@@ -108,35 +124,40 @@ func _on_touch(player: int, zone: int, _position: Vector2) -> void:
 			int(progress[2] / FINISH * 100.0),
 		)
 
+## One half, drawn twice. Everything between the transform calls is in PLAYER
+## space; the reset at the end is mandatory -- an un-reset canvas transform
+## leaks into every later draw call in the frame.
 func _draw() -> void:
 	for player in [1, 2]:
-		_draw_button(player, ZONE_TOP)
-		_draw_button(player, ZONE_BOTTOM)
-		_draw_lane(player)
+		draw_set_transform_matrix(Field.player_xform(player))
+		_draw_half(player)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
 
-	for player in [1, 2]:
-		var t: float = progress[player] / FINISH
-		var x: float = lerpf(track_start[player], track_end[player], t)
-		_draw_car(Vector2(x, lane_y), Palette.for_player(player))
+func _draw_half(player: int) -> void:
+	_draw_button(player, ZONE_NEAR)
+	_draw_button(player, ZONE_FAR)
+	_draw_lane()
+
+	var t: float = progress[player] / FINISH
+	_draw_car(Vector2(lerpf(track_start, track_end, t), lane_y), Palette.for_player(player))
 
 ## The two tap zones, drawn. They were configured but never rendered, so the
 ## rules card told players to tap two buttons that did not exist on screen
 ## (GAME_AUDIT.md H1). Each flashes on tap, and the one to hit next is
 ## highlighted, which teaches the alternate-don't-mash mechanic by showing it.
 func _draw_button(player: int, zone: int) -> void:
-	var key := "%d_%d" % [player, zone]
-	var rect: Rect2 = _zone_rects.get(key, Rect2())
+	var rect: Rect2 = _button_rects.get(zone, Rect2())
 	if rect.size == Vector2.ZERO:
 		return
 
 	var color := Palette.for_player(player)
 	var is_next: bool = _last_zone[player] != zone
-	var flash: float = _flash.get(key, 0.0)
+	var flash: float = _flash.get("%d_%d" % [player, zone], 0.0)
 
 	# A real chunky button centred in the zone, not a tinted overlay across the
 	# whole half -- a big translucent rectangle reads as a dimmed screen rather
 	# than something to press. The whole zone still registers the tap.
-	var size := Vector2(minf(rect.size.x * 0.62, 260.0), minf(rect.size.y * 0.52, 108.0))
+	var size := Vector2(minf(rect.size.x * 0.62, 300.0), minf(rect.size.y * 0.62, 112.0))
 	var btn := Rect2(rect.get_center() - size * 0.5, size)
 
 	# Pressed buttons sink into their shadow; the next one to hit sits proud.
@@ -158,44 +179,45 @@ func _draw_button(player: int, zone: int) -> void:
 		Palette.SURFACE if is_next else Color(Palette.SURFACE, 0.55),
 	)
 
-## An asphalt strip with a dashed centre line and a chequered finish post --
-## a road the car drives on, rather than a bare rule.
-func _draw_lane(player: int) -> void:
-	var x0: float = track_start[player]
-	var x1: float = track_end[player]
-	var road := Rect2(x0 - 10.0, lane_y - 34.0, (x1 - x0) + 20.0, 68.0)
+## An asphalt strip with a dashed centre line and a chequered finish post -- a
+## road the car drives on, rather than a bare rule. In PLAYER space the road runs
+## left to right, which is left to right for whoever is looking at it.
+func _draw_lane() -> void:
+	var h := 34.0 * _car_scale
+	var road := Rect2(track_start - 10.0, lane_y - h, (track_end - track_start) + 20.0, h * 2.0)
 	Juice.sticker_rect(self, road, Palette.ASPHALT, 12.0, 6.0)
 
 	var dash := 22.0
-	var x := x0 + 4.0
-	while x < x1 - 8.0:
-		draw_line(Vector2(x, lane_y), Vector2(minf(x + dash, x1 - 8.0), lane_y), Color(Palette.ACCENT, 0.85), 4.0)
+	var x := track_start + 4.0
+	while x < track_end - 8.0:
+		draw_line(Vector2(x, lane_y), Vector2(minf(x + dash, track_end - 8.0), lane_y), Color(Palette.ACCENT, 0.85), 4.0)
 		x += dash * 2.0
 
-	# Chequered finish post at the end of this player's own lane.
-	var square := 11.0
+	# Chequered finish post at the end of the lane.
+	var square := h * 0.33
 	for row in range(6):
 		for col in range(2):
 			var dark := (row + col) % 2 == 0
 			draw_rect(
-				Rect2(x1 - 4.0 + col * square, lane_y - 33.0 + row * square, square, square),
+				Rect2(track_end - 4.0 + col * square, lane_y - h + 1.0 + row * square, square, square),
 				Palette.OUTLINE if dark else Palette.SURFACE,
 			)
 
-## A little cartoon car -- body, cabin, wheels, headlight -- in the house
-## sticker style. Replaces the flat circle these racers used to be.
+## A little cartoon car -- body, cabin, wheels, headlight -- in the house sticker
+## style. Replaces the flat circle these racers used to be.
 func _draw_car(pos: Vector2, color: Color) -> void:
-	var body := Rect2(pos.x - 28.0, pos.y - 12.0, 56.0, 24.0)
-	var cabin := Rect2(pos.x - 14.0, pos.y - 25.0, 30.0, 15.0)
+	var s := _car_scale
+	var body := Rect2(pos.x - 28.0 * s, pos.y - 12.0 * s, 56.0 * s, 24.0 * s)
+	var cabin := Rect2(pos.x - 14.0 * s, pos.y - 25.0 * s, 30.0 * s, 15.0 * s)
 
 	# Wheels first, so the body sits over them.
-	for wheel_x in [pos.x - 16.0, pos.x + 16.0]:
-		draw_circle(Vector2(wheel_x, pos.y + 13.0), 10.0, Palette.OUTLINE)
-		draw_circle(Vector2(wheel_x, pos.y + 13.0), 4.0, Palette.SURFACE)
+	for wheel_x in [pos.x - 16.0 * s, pos.x + 16.0 * s]:
+		draw_circle(Vector2(wheel_x, pos.y + 13.0 * s), 10.0 * s, Palette.OUTLINE)
+		draw_circle(Vector2(wheel_x, pos.y + 13.0 * s), 4.0 * s, Palette.SURFACE)
 
 	Juice.sticker_rect(self, cabin, color.lerp(Palette.SURFACE, 0.30), 7.0, 5.0)
 	Juice.sticker_rect(self, body, color, 11.0, 5.0)
 
 	# Windscreen + headlight.
-	Juice.rounded_rect(self, Rect2(cabin.position.x + 5.0, cabin.position.y + 4.0, 20.0, 7.0), Color(1, 1, 1, 0.6), 3.0)
-	draw_circle(Vector2(body.end.x - 6.0, pos.y - 2.0), 4.0, Palette.ACCENT)
+	Juice.rounded_rect(self, Rect2(cabin.position.x + 5.0 * s, cabin.position.y + 4.0 * s, 20.0 * s, 7.0 * s), Color(1, 1, 1, 0.6), 3.0)
+	draw_circle(Vector2(body.end.x - 6.0 * s, pos.y - 2.0 * s), 4.0 * s, Palette.ACCENT)

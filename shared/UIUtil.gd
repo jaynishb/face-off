@@ -128,3 +128,47 @@ static func pop_in(node: Control, delay: float = 0.0, target_scale: float = 1.0)
 	t.tween_interval(delay)
 	t.tween_property(node, "scale", Vector2(target_scale, target_scale), 0.4) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## Mount a Control subtree into one player's half, oriented so that player reads
+## it right-way-up. Player 2's mount is rotated by PI (see Field.player_xform),
+## which is what makes a shared phone lying flat between two people work at all.
+##
+## `build` is called once and must return a fresh Control laid out in PLAYER
+## space -- (0,0) at that player's own top-left as they read it, extending to
+## Field.half_size(). Call mirror_for_players() to get one copy per player.
+##
+## Two pitfalls are handled here so callers cannot reintroduce them:
+##   * pivot_offset stays ZERO. The transform's origin IS the pivot, so adding a
+##     centre pivot would double-offset -- and under PI rotation the offset is
+##     negated, so the control flies off in the opposite direction from the usual
+##     symptom and the cause is much harder to spot.
+##   * mouse_filter is IGNORE. Each mount covers half the screen; left at a
+##     Control's default STOP it would silently swallow every gameplay touch in
+##     exactly one half, which reads as "the rotation broke input" and sends you
+##     hunting in the wrong place.
+## Content built inside must not combine set_anchors_preset() with a manual
+## position either -- PRESET_FULL_RECT with no manual position is the one safe
+## combination.
+static func mount_for_player(parent: Node, player: int, build: Callable) -> Control:
+	var mount := Control.new()
+	mount.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var t: Transform2D = Field.player_xform(player)
+	mount.position = t.origin
+	mount.rotation = t.get_rotation()
+	mount.pivot_offset = Vector2.ZERO
+	mount.size = Field.half_size()
+	parent.add_child(mount)
+	var content: Control = build.call(player)
+	if content:
+		mount.add_child(content)
+	return mount
+
+## Anything a player has to READ -- a countdown, a win banner, a pause panel, a
+## rules card -- must appear once per half or somebody reads it upside down.
+## Both copies are built from the same callable and wired to the same handlers,
+## so either player can act on it.
+static func mirror_for_players(parent: Node, build: Callable) -> Array:
+	return [
+		mount_for_player(parent, 1, build),
+		mount_for_player(parent, 2, build),
+	]
