@@ -55,16 +55,13 @@ var _dice: Array[Die] = []
 var _dice_count: int = 2
 var _rolling_count := 0
 
-var _count_label: Label
-var _minus_btn: Button
-var _plus_btn: Button
-var _roll_btn: Button
+var _hint_label: Label
 var _total_label: Label
 
 func _init() -> void:
 	game_id = "dice_roller"
 	display_name = "Dice Roller"
-	rules_text = "Pick how many dice.\nTap ROLL.\nRead the total."
+	rules_text = "Pick how many dice.\nTap anywhere to roll.\nRead the total."
 	theme_bg = Palette.BG_DICE_ROLLER
 
 func setup(_config: Dictionary) -> void:
@@ -72,50 +69,35 @@ func setup(_config: Dictionary) -> void:
 	_rebuild_dice()
 	set_process(true)
 
-	var stepper_label := UIUtil.make_label("DICE", 18)
-	stepper_label.name = "stepper_label"
-	add_child(stepper_label)
+	# Dice count is chosen up front by DiceCountPrompt (PartyGameSelect) --
+	# no in-game stepper. Tap anywhere on the screen rolls, same pattern
+	# SumoBlob uses for tap-to-dash: connect to InputManager's player-split
+	# signal and ignore which player/zone fired, since this is a single
+	# shared action, not a per-player one.
+	InputManager.player_pressed.connect(_on_tap)
 
-	_minus_btn = UIUtil.make_soft_round_button("-", 48, Palette.SURFACE)
-	_minus_btn.pressed.connect(func(): _change_count(-1))
-	add_child(_minus_btn)
-
-	_count_label = UIUtil.make_label(str(_dice_count), 28)
-	_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	add_child(_count_label)
-
-	_plus_btn = UIUtil.make_soft_round_button("+", 48, Palette.SURFACE)
-	_plus_btn.pressed.connect(func(): _change_count(1))
-	add_child(_plus_btn)
-
-	_roll_btn = UIUtil.make_soft_button("ROLL", 28, Palette.SUCCESS)
-	_roll_btn.pressed.connect(_on_roll_pressed)
-	add_child(_roll_btn)
+	_hint_label = UIUtil.make_label("TAP ANYWHERE TO ROLL", 22)
+	add_child(_hint_label)
 
 	_total_label = UIUtil.make_label("TOTAL: %d" % _current_total(), 24)
 	add_child(_total_label)
 
-	_stepper_label_ref = stepper_label
 	layout()
 
-var _stepper_label_ref: Label
-
 func layout() -> void:
-	if not _roll_btn:
+	if not _hint_label:
 		return
 	var mid := Field.mid_x()
 	var top := Field.top() + 20.0
 
-	_stepper_label_ref.position = Vector2(mid - 90, top)
-	_minus_btn.position = Vector2(mid - 100, top + 26)
-	_count_label.position = Vector2(mid - 52, top + 26)
-	_count_label.size = Vector2(104, 48)
-	_plus_btn.position = Vector2(mid + 52, top + 26)
-
-	_roll_btn.position = Vector2(mid - 140, top + 96)
-	_total_label.position = Vector2(mid - 80, top + 200)
+	_hint_label.position = Vector2(mid - 160, top + 20)
+	_hint_label.size = Vector2(320, 32)
+	_total_label.position = Vector2(mid - 80, top + 70)
 
 	_layout_dice()
+
+func _on_tap(_player: int, _zone: int, _position: Vector2) -> void:
+	_on_roll_pressed()
 
 func _layout_dice() -> void:
 	var mid := Field.mid_x()
@@ -134,13 +116,6 @@ func _rebuild_dice() -> void:
 	_layout_dice()
 	queue_redraw()
 
-func _change_count(delta: int) -> void:
-	_dice_count = clampi(_dice_count + delta, MIN_DICE, MAX_DICE)
-	SaveManager.set_party_dice_count(_dice_count)
-	_count_label.text = str(_dice_count)
-	UIUtil.punch(_count_label)
-	_rebuild_dice()
-
 func _current_total() -> int:
 	var total := 0
 	for d in _dice:
@@ -150,6 +125,7 @@ func _current_total() -> int:
 func _on_roll_pressed() -> void:
 	if _rolling_count > 0:
 		return
+	_hint_label.visible = false
 	_rolling_count = _dice.size()
 	for d in _dice:
 		d.rolling = true
@@ -221,12 +197,13 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _on_all_landed() -> void:
+	_hint_label.visible = true
 	AudioManager.play_sfx("drop")
 	if SaveManager.haptics_enabled:
 		Input.vibrate_handheld(30)
 
 func _draw() -> void:
-	var y := Field.top() + 340.0
+	var y := Field.top() + 280.0
 	for d in _dice:
 		_draw_shadow(Vector2(d.x, y), d.height, d.squash)
 		for i in range(d.trail.size()):

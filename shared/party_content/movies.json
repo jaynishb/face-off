@@ -1958,5 +1958,180 @@
     "decade": "2020s",
     "language": "Korean",
     "difficulty": "hard"
+  },
+  {
+    "title": "The Panic in Needle Park",
+    "year": 1971,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Fat City",
+    "year": 1972,
+    "decade": "1970s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Choose Me",
+    "year": 1984,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Trouble in Mind",
+    "year": 1985,
+    "decade": "1980s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Bottle Rocket",
+    "year": 1996,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Living in Oblivion",
+    "year": 1995,
+    "decade": "1990s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Wendy and Lucy",
+    "year": 2008,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Junebug",
+    "year": 2005,
+    "decade": "2000s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Krisha",
+    "year": 2015,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Columbus",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Skinamarink",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Cha Cha Real Smooth",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "English",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Uski Roti",
+    "year": 1970,
+    "decade": "1970s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Aakrosh",
+    "year": 1980,
+    "decade": "1980s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Bandit Queen",
+    "year": 1994,
+    "decade": "1990s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Khosla Ka Ghosla!",
+    "year": 2006,
+    "decade": "2000s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Gangs of Wasseypur",
+    "year": 2012,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Newton",
+    "year": 2017,
+    "decade": "2010s",
+    "language": "Hindi",
+    "difficulty": "medium"
+  },
+  {
+    "title": "Qala",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Hindi",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Green Fish",
+    "year": 1997,
+    "decade": "1990s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Failan",
+    "year": 2001,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "3-Iron",
+    "year": 2004,
+    "decade": "2000s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "Pieta",
+    "year": 2012,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "medium"
+  },
+  {
+    "title": "A Girl at My Door",
+    "year": 2014,
+    "decade": "2010s",
+    "language": "Korean",
+    "difficulty": "hard"
+  },
+  {
+    "title": "The Novelist's Film",
+    "year": 2022,
+    "decade": "2020s",
+    "language": "Korean",
+    "difficulty": "hard"
   }
 ]

@@ -1,57 +1,57 @@
 extends PartyGame
 ## Movie Guess — the app suggests a random movie filtered by era + language;
 ## the group guesses it out loud. Resolution is verbal, by the humans, so
-## there's no scoring here at all -- just filter, reveal, repeat. Pure
-## Control-children UI (no _draw() needed), built the same code-in-setup()
-## way every other shell/game screen in this project is built.
+## there's no scoring here at all -- just reveal, repeat. Era/language/timer
+## are all chosen up front by MovieGuessSetupPrompt (PartyGameSelect) rather
+## than live in-game controls; tap anywhere on the screen to reveal, same
+## "tap anywhere" pattern Dice Roller uses.
 
 const CONTENT_PATH := "res://shared/party_content/movies.json"
+const COUNTDOWN_RADIUS := 42.0
 
 var _deck := PromptDeck.new()
-var _era_label_node: Label
-var _lang_label_node: Label
-var _era_option: OptionButton
-var _lang_option: OptionButton
+var _timer := MatchTimer.new()
+var _decades: Array = []
+var _languages: Array = []
+var _timer_seconds := 0
+
 var _card: PanelContainer
 var _title_label: Label
 var _meta_label: Label
-var _reveal_btn: Button
-var _revealed_once := false
+var _hint_label: Label
+var _countdown_label: Label
+var _cancel_btn: Button
+
+var _locked := false
+var _progress := 0.0
+var _last_tick_second := -1
+var _countdown_center := Vector2.ZERO
 
 func _init() -> void:
 	game_id = "movie_guess"
 	display_name = "Movie Guess"
-	rules_text = "Pick an era and language.\nReveal a movie.\nGroup guesses it out loud."
+	rules_text = "Tap anywhere to reveal a movie.\nGroup guesses it out loud.\nOptional timer locks it while you guess."
 	theme_bg = Palette.BG_MOVIE_GUESS
 
 func setup(_config: Dictionary) -> void:
 	_deck.load_from_file(CONTENT_PATH)
 
-	var saved_filters := SaveManager.get_party_filter(game_id)
+	var saved := SaveManager.get_party_filter(game_id)
+	_decades = saved.get("decades", [])
+	_languages = saved.get("languages", [])
+	_timer_seconds = saved.get("timer_seconds", 0)
 
-	_era_label_node = UIUtil.make_label("ERA", 18)
-	_era_label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	add_child(_era_label_node)
+	add_child(_timer)
+	_timer.tick.connect(_on_tick)
+	_timer.time_up.connect(_on_time_up)
 
-	_era_option = OptionButton.new()
-	_era_option.add_item("Any Era")
-	for value in _deck.distinct_values("decade"):
-		_era_option.add_item(value)
-	_select_option(_era_option, saved_filters.get("decade", "Any Era"))
-	_era_option.item_selected.connect(func(_i): _on_filters_changed())
-	add_child(_era_option)
+	# Tap anywhere reveals, same InputManager.player_pressed pattern Dice
+	# Roller/SumoBlob use -- ignore which player/zone fired, it's one shared
+	# action. Locked out entirely while a lock timer is counting down.
+	InputManager.player_pressed.connect(_on_tap)
 
-	_lang_label_node = UIUtil.make_label("LANGUAGE", 18)
-	_lang_label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	add_child(_lang_label_node)
-
-	_lang_option = OptionButton.new()
-	_lang_option.add_item("Any Language")
-	for value in _deck.distinct_values("language"):
-		_lang_option.add_item(value)
-	_select_option(_lang_option, saved_filters.get("language", "Any Language"))
-	_lang_option.item_selected.connect(func(_i): _on_filters_changed())
-	add_child(_lang_option)
+	_hint_label = UIUtil.make_label("TAP ANYWHERE TO REVEAL A MOVIE", 20)
+	add_child(_hint_label)
 
 	_card = PanelContainer.new()
 	var style := UIUtil.soft_panel_style(Palette.SURFACE, 28.0)
@@ -65,7 +65,7 @@ func setup(_config: Dictionary) -> void:
 	vbox.add_theme_constant_override("separation", 10)
 	_card.add_child(vbox)
 
-	_title_label = UIUtil.make_label("TAP REVEAL TO START", 36)
+	_title_label = UIUtil.make_label("TAP ANYWHERE TO START", 36)
 	_title_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(_title_label)
 
@@ -73,55 +73,48 @@ func setup(_config: Dictionary) -> void:
 	_meta_label.modulate.a = 0.7
 	vbox.add_child(_meta_label)
 
-	_reveal_btn = UIUtil.make_soft_button("REVEAL", 26, Palette.PARTY_PRIMARY)
-	_reveal_btn.add_theme_color_override("font_color", Palette.SURFACE)
-	_reveal_btn.add_theme_color_override("font_hover_color", Palette.SURFACE)
-	_reveal_btn.add_theme_color_override("font_pressed_color", Palette.SURFACE)
-	_reveal_btn.pressed.connect(_on_reveal_pressed)
-	add_child(_reveal_btn)
+	_countdown_label = UIUtil.make_label("", 28)
+	_countdown_label.visible = false
+	add_child(_countdown_label)
+
+	_cancel_btn = UIUtil.make_soft_button("CANCEL", 22, Palette.PLAYER_1)
+	_cancel_btn.add_theme_color_override("font_color", Palette.SURFACE)
+	_cancel_btn.add_theme_color_override("font_hover_color", Palette.SURFACE)
+	_cancel_btn.add_theme_color_override("font_pressed_color", Palette.SURFACE)
+	_cancel_btn.visible = false
+	_cancel_btn.pressed.connect(_on_cancel_pressed)
+	add_child(_cancel_btn)
 
 	layout()
 
 func layout() -> void:
-	if not _era_option:
+	if not _card:
 		return
 	var mid := Field.mid_x()
 	var top := Field.top() + 20.0
 
-	_era_label_node.position = Vector2(mid - 220, top)
-	_era_option.position = Vector2(mid - 220, top + 28)
-	_era_option.size = Vector2(200, 48)
+	_hint_label.position = Vector2(mid - 200, top)
+	_hint_label.size = Vector2(400, 30)
 
-	_lang_label_node.position = Vector2(mid + 20, top)
-	_lang_option.position = Vector2(mid + 20, top + 28)
-	_lang_option.size = Vector2(200, 48)
-
-	_card.position = Vector2(mid - 320, top + 110)
+	_card.position = Vector2(mid - 320, top + 50)
 	_card.size = Vector2(640, 300)
 	_card.pivot_offset = _card.size * 0.5
 
-	_reveal_btn.position = Vector2(mid - 140, top + 430)
+	_countdown_center = Vector2(mid, top + 410)
+	_countdown_label.position = _countdown_center - Vector2(30, 20)
+	_countdown_label.size = Vector2(60, 40)
 
-func _select_option(option: OptionButton, value: String) -> void:
-	for i in range(option.item_count):
-		if option.get_item_text(i) == value:
-			option.select(i)
-			return
-	option.select(0)
+	_cancel_btn.position = Vector2(mid - 140, top + 470)
 
 func _current_filters() -> Dictionary:
-	var era := _era_option.get_item_text(_era_option.selected)
-	var lang := _lang_option.get_item_text(_lang_option.selected)
-	return {
-		"decade": "Any" if era == "Any Era" else era,
-		"language": "Any" if lang == "Any Language" else lang,
-	}
+	return {"decade": _decades, "language": _languages}
 
-func _on_filters_changed() -> void:
-	SaveManager.set_party_filter(game_id, _current_filters())
-	_deck.reset_recent()
+func _on_tap(_player: int, _zone: int, _position: Vector2) -> void:
+	if _locked:
+		return
+	_reveal()
 
-func _on_reveal_pressed() -> void:
+func _reveal() -> void:
 	var pick := _deck.draw_random(_current_filters())
 	if pick.is_empty():
 		_title_label.text = "No movies match —\ntry different filters"
@@ -131,13 +124,61 @@ func _on_reveal_pressed() -> void:
 		_meta_label.text = "%s · %s" % [str(pick.get("year", "")), pick.get("language", "")]
 		AudioManager.play_sfx("place")
 
-	if not _revealed_once:
-		_revealed_once = true
-		_reveal_btn.text = "NEXT MOVIE"
-
 	_card.pivot_offset = _card.size * 0.5
 	_card.scale = Vector2(0.9, 0.9)
 	var t := _card.create_tween()
 	t.tween_property(_card, "scale", Vector2.ONE, 0.3) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	UIUtil.punch(_title_label)
+
+	if _timer_seconds > 0 and not pick.is_empty():
+		_lock()
+	else:
+		_hint_label.text = "TAP ANYWHERE FOR NEXT MOVIE"
+
+func _lock() -> void:
+	_locked = true
+	_last_tick_second = -1
+	_progress = 0.0
+	_hint_label.text = "GUESS BEFORE TIME RUNS OUT!"
+	_countdown_label.visible = true
+	_cancel_btn.visible = true
+	_timer.start(_timer_seconds)
+	queue_redraw()
+
+func _unlock() -> void:
+	_locked = false
+	_countdown_label.visible = false
+	_cancel_btn.visible = false
+	_hint_label.text = "TAP ANYWHERE FOR NEXT MOVIE"
+	queue_redraw()
+
+func _on_tick(seconds_remaining: float) -> void:
+	_progress = _timer.get_progress()
+	var whole_second := ceili(seconds_remaining)
+	_countdown_label.text = str(whole_second)
+	if whole_second != _last_tick_second:
+		_last_tick_second = whole_second
+		AudioManager.play_sfx("countdown_tick")
+	queue_redraw()
+
+func _on_time_up() -> void:
+	_unlock()
+	if SaveManager.haptics_enabled:
+		Input.vibrate_handheld(30)
+
+## The group already guessed it (or wants to bail) -- stop the timer early
+## rather than waiting it out.
+func _on_cancel_pressed() -> void:
+	_timer.stop()
+	_unlock()
+
+func _draw() -> void:
+	if not _locked:
+		return
+	var urgency_color: Color = Palette.ACCENT.lerp(Palette.PLAYER_1, _progress)
+	draw_arc(_countdown_center, COUNTDOWN_RADIUS, 0.0, TAU, 48, Color(Palette.OUTLINE, 0.15), 8.0)
+	if _progress < 1.0:
+		var start_angle := -PI * 0.5
+		var end_angle := start_angle + TAU * (1.0 - _progress)
+		draw_arc(_countdown_center, COUNTDOWN_RADIUS, start_angle, end_angle, 48, urgency_color, 8.0)

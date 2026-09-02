@@ -104,7 +104,29 @@ func _on_tile_pressed(game_id: String) -> void:
 		var meta := PartyManager.get_party_game_meta(game_id)
 		card.show_rules(meta.get("display_name", game_id), meta.get("rules_text", ""), meta.get("icon", ""))
 		SaveManager.mark_party_rules_seen(game_id)
-		card.dismissed.connect(func(): _launch(game_id))
+		card.dismissed.connect(func(): _proceed_to_launch(game_id))
+	else:
+		_proceed_to_launch(game_id)
+
+## A couple of party games need one value picked before they load (Dice
+## Roller's dice count, Movie Guess's era/language/timer) -- named special
+## cases here rather than a general "pre-launch config" mechanism nothing
+## else needs yet. Runs on every launch, not just first-play like RulesCard,
+## since these are per-session choices.
+func _proceed_to_launch(game_id: String) -> void:
+	if game_id == "dice_roller":
+		var prompt := DiceCountPrompt.new()
+		add_child(prompt)
+		prompt.show_prompt(SaveManager.party_dice_count)
+		prompt.confirmed.connect(func(count: int):
+			SaveManager.set_party_dice_count(count)
+			_launch(game_id)
+		)
+	elif game_id == "movie_guess":
+		var prompt := MovieGuessSetupPrompt.new()
+		add_child(prompt)
+		prompt.show_prompt(SaveManager.get_party_filter(game_id))
+		prompt.confirmed.connect(func(): _launch(game_id))
 	else:
 		_launch(game_id)
 

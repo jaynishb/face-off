@@ -35,16 +35,29 @@ func distinct_values(field: String) -> Array:
 	return values
 
 ## filters: field_name -> value. A value of "" or "Any" (or an absent key)
-## matches everything for that field.
+## matches everything for that field. A value that is an Array means
+## multi-select: matches when the entry's field is any one of the array's
+## values, and an empty array behaves like "Any" (no constraint) rather than
+## matching nothing -- so a caller that hasn't picked anything yet still gets
+## the full pool instead of a dead end.
 func filtered(filters: Dictionary) -> Array:
 	var result := []
 	for entry in _entries:
 		var match_all := true
 		for field in filters:
 			var want = filters[field]
-			if want == "" or want == "Any":
+			# Array-vs-String is not a valid `==` comparison in GDScript (it's a
+			# runtime error, not a safe false) -- check `is Array` first so the
+			# "" / "Any" comparison below only ever runs on a String.
+			if want is Array:
+				if want.is_empty():
+					continue
+				if not want.has(entry.get(field)):
+					match_all = false
+					break
+			elif want == "" or want == "Any":
 				continue
-			if entry.get(field) != want:
+			elif entry.get(field) != want:
 				match_all = false
 				break
 		if match_all:
