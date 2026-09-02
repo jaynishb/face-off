@@ -163,14 +163,15 @@ func _maybe_finish() -> void:
 	end_match(winner, total[1], total[2])
 
 func _draw_half(player: int) -> void:
-	draw_ground(Palette.BG_ARCHERY)
+	draw_scene("archery", Palette.BG_ARCHERY)
 	var color := Palette.for_player(player)
 
-	var grass := Rect2(play_rect.position.x, play_rect.position.y + play_rect.size.y * 0.42, play_rect.size.x, play_rect.size.y * 0.58)
-	Juice.sticker_rect(self, grass, Palette.RANGE_GRASS, 12.0, 6.0)
+	if Art.game("archery", "bg") == null:
+		var grass := Rect2(play_rect.position.x, play_rect.position.y + play_rect.size.y * 0.42, play_rect.size.x, play_rect.size.y * 0.58)
+		Juice.sticker_rect(self, grass, Palette.RANGE_GRASS, 12.0, 6.0)
 
 	_draw_target()
-	_draw_archer(color)
+	_draw_archer_for(player)
 	_draw_wind()
 
 	if aiming[player]:
@@ -183,6 +184,12 @@ func _draw_half(player: int) -> void:
 	_draw_card(player, color)
 
 func _draw_target() -> void:
+	var tex := Art.game("archery", "target")
+	if tex:
+		# The art includes its own tripod below the face, so it is anchored by the
+		# face centre -- which is the point the ring scoring measures from.
+		sprite(tex, target_center + Vector2(0.0, target_radius * 0.42), target_radius * 3.1)
+		return
 	# Stand first, so the face sits over it.
 	var leg := Rect2(target_center.x - 5.0, target_center.y, 10.0, target_radius + 40.0)
 	Juice.sticker_rect(self, leg, Palette.PADDOCK_SAND, 4.0, 4.0)
@@ -196,7 +203,15 @@ func _draw_target() -> void:
 		draw_circle(target_center, target_radius * ring[0], ring[1])
 	draw_arc(target_center, target_radius, 0.0, TAU, 40, Palette.OUTLINE, 5.0)
 
-func _draw_archer(color: Color) -> void:
+func _draw_archer_for(player: int) -> void:
+	var tex := Art.char_for("archery", "char", player)
+	if tex:
+		sprite(tex, archer_pos + Vector2(0.0, -8.0 * art_scale), 128.0 * art_scale)
+		return
+	_draw_archer_fallback(Palette.for_player(player))
+
+## Primitive stand-in, used only when the generated archer art is missing.
+func _draw_archer_fallback(color: Color) -> void:
 	var s := art_scale
 	Juice.sticker_rect(self, Rect2(archer_pos.x - 11.0 * s, archer_pos.y - 18.0 * s, 22.0 * s, 30.0 * s), color, 9.0, 5.0)
 	Juice.cartoon_circle(self, archer_pos + Vector2(0.0, -30.0 * s), 13.0 * s, Palette.SURFACE)
@@ -232,6 +247,10 @@ func _draw_aim(player: int, color: Color) -> void:
 		prev = sample
 
 func _draw_arrow(p: Vector2, angle: float, color: Color) -> void:
+	var tex := Art.game("archery", "arrow")
+	if tex:
+		sprite(tex, p, 26.0 * art_scale, false, angle)
+		return
 	var s := art_scale
 	var dir := Vector2.RIGHT.rotated(angle)
 	draw_line(p - dir * 22.0 * s, p, Palette.OUTLINE, 5.0 * s)

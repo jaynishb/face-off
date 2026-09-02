@@ -172,3 +172,48 @@ static func mirror_for_players(parent: Node, build: Callable) -> Array:
 		mount_for_player(parent, 1, build),
 		mount_for_player(parent, 2, build),
 	]
+
+## A round button carrying an icon from the art pack instead of an ASCII label.
+## Falls back to `fallback_text` when the icon is missing, which is what keeps
+## the shell usable before the art pack lands (and readable if one file is ever
+## dropped) -- the ASCII labels are not decoration, they are the degraded mode.
+static func make_icon_button(
+	icon_name: String, fallback_text: String, diameter: float = 56.0,
+	bg_color: Color = Palette.SURFACE,
+) -> Button:
+	var btn := make_round_button("", diameter, bg_color)
+	var texture := Art.icon(icon_name)
+	if texture == null:
+		btn.text = fallback_text
+		return btn
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# A TextureRect defaults to EXPAND_KEEP_SIZE, which reports the SOURCE
+	# texture's size as the control's minimum size. A 256x256 icon inside a 52px
+	# disc therefore lays itself out at 256px, and its strokes land entirely
+	# outside the button -- the button renders as an empty circle. Caught by
+	# looking at the rendered screen; nothing about it errors.
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Full-rect with no manual position: the one anchors-preset combination that
+	# does not double-offset (see CLAUDE.md).
+	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var pad := diameter * 0.26
+	icon.offset_left = pad
+	icon.offset_top = pad
+	icon.offset_right = -pad
+	icon.offset_bottom = -pad
+	btn.add_child(icon)
+	return btn
+
+## Prefix an ordinary text button with a small icon, for the menu-style rows on
+## Settings and the pause panel.
+static func add_button_icon(btn: Button, icon_name: String) -> void:
+	var texture := Art.icon(icon_name)
+	if texture == null:
+		return
+	btn.icon = texture
+	btn.expand_icon = true
+	btn.add_theme_constant_override("icon_max_width", 28)
+	btn.add_theme_constant_override("h_separation", 12)

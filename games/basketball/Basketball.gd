@@ -169,36 +169,50 @@ func _finish() -> void:
 
 func _draw_half(player: int) -> void:
 	var color := Palette.for_player(player)
-	draw_ground(Palette.BG_BASKETBALL)
+	draw_scene("basketball", Palette.BG_BASKETBALL)
 
-	# Court floor, key and arc.
-	var floor_rect := Rect2(play_rect.position, play_rect.size)
-	Juice.sticker_rect(self, floor_rect, Palette.COURT_WOOD, 20.0, 8.0)
-	var marking := Color(color, 0.35)
-	var key := Rect2(
-		hoop_center.x - 84.0 * art_scale, play_rect.position.y,
-		168.0 * art_scale, play_rect.size.y * 0.34,
-	)
-	draw_rect(key, marking, false, 5.0)
-	draw_arc(hoop_center, play_rect.size.x * 0.42, 0.0, PI, 40, marking, 5.0)
+	# The scene art paints its own key and three-point arc, so ours is drawn only
+	# as a fallback -- overlaying both double-marks the court at two different
+	# scales, which is what it looked like before anyone looked at it.
+	if Art.game("basketball", "bg") == null:
+		var marking := Color(color, 0.30)
+		var key := Rect2(
+			hoop_center.x - 84.0 * art_scale, play_rect.position.y,
+			168.0 * art_scale, play_rect.size.y * 0.34,
+		)
+		draw_rect(key, marking, false, 5.0)
+		draw_arc(hoop_center, play_rect.size.x * 0.42, 0.0, PI, 40, marking, 5.0)
 
 	_draw_hoop(color)
+
+	# The shooter stands at the baseline. The pack's characters all face right,
+	# so no flip is needed here; anything facing left would reuse the same art
+	# mirrored rather than a second file.
+	sprite(Art.char_for("basketball", "char", player), shoot_from + Vector2(0.0, 10.0 * art_scale), 132.0 * art_scale)
 
 	if aiming[player]:
 		_draw_aim(player, color)
 
-	Juice.cartoon_circle(self, ball_pos[player], ball_radius, Palette.ACCENT)
-	# Seam lines, so the ball reads as a basketball rather than a dot.
-	draw_arc(ball_pos[player], ball_radius * 0.92, 0.0, TAU, 24, Color(Palette.OUTLINE, 0.7), 2.5)
-	draw_line(
-		ball_pos[player] - Vector2(ball_radius * 0.9, 0.0),
-		ball_pos[player] + Vector2(ball_radius * 0.9, 0.0),
-		Color(Palette.OUTLINE, 0.7), 2.5,
-	)
+	var ball := Art.game("basketball", "ball")
+	if ball:
+		# Spin the ball with its travel so a shot in flight reads as thrown.
+		sprite(ball, ball_pos[player], ball_radius * 2.2, false, ball_pos[player].x * 0.02)
+	else:
+		Juice.cartoon_circle(self, ball_pos[player], ball_radius, Palette.ACCENT)
 
 	_draw_clock()
 
 func _draw_hoop(color: Color) -> void:
+	var hoop := Art.game("basketball", "hoop")
+	if hoop:
+		# The art's rim sits low in its frame; offset so the drawn rim lands on
+		# hoop_center.y, which is the exact plane _crossed_rim() scores against.
+		sprite(hoop, hoop_center - Vector2(0.0, 34.0 * art_scale), 128.0 * art_scale)
+		return
+	_draw_hoop_fallback(color)
+
+## Primitive stand-in, used only when the generated hoop art is missing.
+func _draw_hoop_fallback(color: Color) -> void:
 	var board := Rect2(
 		hoop_center.x - 76.0 * art_scale, hoop_center.y - 74.0 * art_scale,
 		152.0 * art_scale, 62.0 * art_scale,
@@ -215,7 +229,6 @@ func _draw_hoop(color: Color) -> void:
 		rim_half_width * 2.0, 10.0 * art_scale,
 	), Palette.ACCENT, 4.0)
 
-	# Net: a few tapering strokes rather than a mesh.
 	for i in range(5):
 		var t := i / 4.0
 		var top := Vector2(lerpf(hoop_center.x - rim_half_width, hoop_center.x + rim_half_width, t), hoop_center.y + 4.0)

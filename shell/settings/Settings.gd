@@ -18,8 +18,7 @@ func _ready() -> void:
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 	AudioManager.play_menu_music()
 
-	_back_btn = UIUtil.make_button("<", 28, Palette.SURFACE)
-	_back_btn.custom_minimum_size = Vector2(64, 64)
+	_back_btn = UIUtil.make_icon_button("back", "<", 64, Palette.SURFACE)
 	_back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
 	add_child(_back_btn)
 
@@ -37,14 +36,15 @@ func _ready() -> void:
 	_scroll.add_child(_column)
 
 	_column.add_child(_make_section_header("GENERAL"))
-	_column.add_child(_make_toggle_row("Music", SaveManager.music_enabled, func(v): AudioManager.set_music_enabled(v)))
-	_column.add_child(_make_toggle_row("Sound FX", SaveManager.sfx_enabled, func(v): AudioManager.set_sfx_enabled(v)))
-	_column.add_child(_make_toggle_row("Haptics", SaveManager.haptics_enabled, func(v): SaveManager.set_haptics_enabled(v)))
+	_column.add_child(_make_toggle_row("Music", "music", SaveManager.music_enabled, func(v): AudioManager.set_music_enabled(v)))
+	_column.add_child(_make_toggle_row("Sound FX", "sound_on", SaveManager.sfx_enabled, func(v): AudioManager.set_sfx_enabled(v)))
+	_column.add_child(_make_toggle_row("Haptics", "star", SaveManager.haptics_enabled, func(v): SaveManager.set_haptics_enabled(v)))
 
 	_column.add_child(_make_section_header("MORE"))
 	var ads_btn := UIUtil.make_button(
 		"ADS REMOVED" if SaveManager.ad_free else "REMOVE ADS", 22
 	)
+	UIUtil.add_button_icon(ads_btn, "star")
 	ads_btn.disabled = SaveManager.ad_free
 	ads_btn.pressed.connect(func():
 		SaveManager.set_ad_free(true)
@@ -54,10 +54,12 @@ func _ready() -> void:
 
 	_column.add_child(_make_section_header("ACCOUNT"))
 	var restore_btn := UIUtil.make_button("RESTORE PURCHASES", 18, Palette.SURFACE)
+	UIUtil.add_button_icon(restore_btn, "restart")
 	restore_btn.pressed.connect(_on_restore_pressed)
 	_column.add_child(restore_btn)
 
 	var privacy_btn := UIUtil.make_button("PRIVACY POLICY", 18, Palette.SURFACE)
+	UIUtil.add_button_icon(privacy_btn, "question")
 	privacy_btn.pressed.connect(_on_privacy_pressed)
 	_column.add_child(privacy_btn)
 
@@ -99,7 +101,7 @@ func _make_section_header(text: String) -> Control:
 	panel.add_child(label)
 	return panel
 
-func _make_toggle_row(label_text: String, initial: bool, on_toggled: Callable) -> Control:
+func _make_toggle_row(label_text: String, icon_name: String, initial: bool, on_toggled: Callable) -> Control:
 	var panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Palette.SURFACE
@@ -110,8 +112,18 @@ func _make_toggle_row(label_text: String, initial: bool, on_toggled: Callable) -
 	panel.add_theme_stylebox_override("panel", style)
 
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
+	row.add_theme_constant_override("separation", 14)
 	panel.add_child(row)
+
+	var icon_texture := Art.icon(icon_name)
+	if icon_texture:
+		var icon := TextureRect.new()
+		icon.texture = icon_texture
+		icon.custom_minimum_size = Vector2(30, 30)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(icon)
 
 	var label := UIUtil.make_label(label_text, 24)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT

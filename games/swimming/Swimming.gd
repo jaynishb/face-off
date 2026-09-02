@@ -124,16 +124,22 @@ func _swimmer_x(player: int) -> float:
 	return lerpf(lane_left, lane_right, t)
 
 func _draw_half(player: int) -> void:
-	draw_ground(Palette.BG_SWIM)
+	draw_scene("swimming", Palette.BG_SWIM)
 
 	var pool := Rect2(
 		play_rect.position.x, play_rect.position.y + play_rect.size.y * 0.28,
 		play_rect.size.x, play_rect.size.y * 0.56,
 	)
-	Juice.sticker_rect(self, pool, Palette.POOL_TEAL, 14.0, 7.0)
+	if Art.game("swimming", "bg") == null:
+		Juice.sticker_rect(self, pool, Palette.POOL_TEAL, 14.0, 7.0)
 
-	# Lane ropes above and below the swimmer.
+	# Lane ropes above and below the swimmer, tiled rather than stretched so the
+	# floats keep their proportions on any screen width.
+	var rope := Art.game("swimming", "rope")
 	for y in [pool.position.y + 18.0 * art_scale, pool.end.y - 18.0 * art_scale]:
+		if rope:
+			tile_h(rope, Rect2(pool.position.x, y - 8.0 * art_scale, pool.size.x, 16.0 * art_scale), 16.0 * art_scale)
+			continue
 		var x := pool.position.x + 14.0
 		var i := 0
 		while x < pool.end.x - 14.0:
@@ -142,14 +148,33 @@ func _draw_half(player: int) -> void:
 			i += 1
 
 	# Touchpads at each end.
+	var wall := Art.game("swimming", "wall")
 	for x in [lane_left - 22.0 * art_scale, lane_right + 4.0 * art_scale]:
-		Juice.sticker_rect(self, Rect2(x, pool.position.y + 26.0, 18.0 * art_scale, pool.size.y - 52.0), Palette.SURFACE, 5.0, 4.0)
+		if wall:
+			sprite(wall, Vector2(x + 9.0 * art_scale, pool.get_center().y), pool.size.y * 0.62)
+		else:
+			Juice.sticker_rect(self, Rect2(x, pool.position.y + 26.0, 18.0 * art_scale, pool.size.y - 52.0), Palette.SURFACE, 5.0, 4.0)
 
 	_draw_swimmer(player)
 	_draw_metronome(player)
 	_draw_lengths(player)
 
+## Two-stroke cycle from the pack. `face` is the direction of travel: the art
+## faces right, so the return length is the same image mirrored rather than a
+## second file.
 func _draw_swimmer(player: int) -> void:
+	var tex := Art.char_for("swimming", "char" if stroke[player] < 0.5 else "pull", player)
+	if tex:
+		var bob: float = sin(stroke[player] * TAU) * 4.0 * art_scale
+		sprite(
+			tex, Vector2(_swimmer_x(player), lane_y + bob), 84.0 * art_scale,
+			heading[player] < 0.0,
+		)
+		return
+	_draw_swimmer_fallback(player)
+
+## Primitive stand-in, used only when the generated swimmer art is missing.
+func _draw_swimmer_fallback(player: int) -> void:
 	var s := art_scale
 	var color := Palette.for_player(player)
 	var x := _swimmer_x(player)

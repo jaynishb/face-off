@@ -232,10 +232,22 @@ async function findButtonsGeneric(page, accent) {
           }
         }
         if (n < 200) continue; // ignore small accent flecks
-        boxes.push({
+        const box = {
           x: ((minX + maxX) / 2) / sx, y: ((minY + maxY) / 2) / sy,
           w: (maxX - minX) / sx, h: (maxY - minY) / sy,
-        });
+        };
+        // Shape filter. The gold ACCENT colour is no longer unique to buttons:
+        // the art pack paints it into basketballs, trophies, targets and half
+        // the game thumbnails. A PLAY button is a wide capsule (~126x52, ratio
+        // ~2.4); a thumbnail blob is roughly square. Without this the first
+        // "button" is a picture and the harness launches the wrong game while
+        // still reporting that it reached Game Select.
+        // Thresholds are in CSS pixels, which are NOT design pixels: a 720-wide
+        // design viewport is displayed in a 390-wide CSS viewport, so a 126x52
+        // button measures about 68x28 here.
+        const ratio = box.w / Math.max(box.h, 1);
+        if (box.w < 40 || box.h < 12 || ratio < 1.6 || ratio > 4.4) continue;
+        boxes.push(box);
       }
     }
     return boxes.sort((a, b) => a.y - b.y || a.x - b.x);
@@ -252,6 +264,18 @@ async function findGreen(page) {
 async function findButtonsOfColor(page, color) {
   const orig = color;
   return await findButtonsGeneric(page, orig);
+}
+
+// Set PLAYTEST_SHOTS=/some/dir to dump a screenshot at each step. Everything on
+// these screens is drawn into one canvas, so when a check fails there is no DOM
+// to inspect -- a picture is the only way to see what the harness was actually
+// looking at.
+const SHOT_DIR = process.env.PLAYTEST_SHOTS || '';
+let shotIndex = 0;
+async function shot(page, label) {
+  if (!SHOT_DIR) return;
+  fs.mkdirSync(SHOT_DIR, { recursive: true });
+  await page.screenshot({ path: `${SHOT_DIR}/${String(++shotIndex).padStart(2, '0')}-${label}.png` });
 }
 
 const results = [];
@@ -292,13 +316,52 @@ async function main() {
   // Main Menu -> Game Select. Buttons are Controls, so a tap is enough.
   await tap(cdp, { x: VIEWPORT.width / 2, y: VIEWPORT.height * 0.66 });
   await sleep(1500);
+  await shot(page, 'game-select');
   const playButtons = await findButtons(page);
   check('reached Game Select', playButtons.length >= 6, `${playButtons.length} PLAY buttons`);
 
+  // A bare game id runs the full assertion suite (air_hockey is the probe game:
+  // its paddles are large, solid, and confined to their own half, so a colour
+  // blob is an honest read of where each one is). `name@N` just enters the Nth
+  // card and screenshots it -- for eyeballing a game whose pieces are not
+  // shaped like a paddle.
   const games = only.length ? only : ['air_hockey'];
-  for (const gameId of games) {
+  for (const spec of games) {
+    // `name`, `name@index`, or `name@index/scrolls` -- Game Select only shows
+    // about eight cards at once, so anything below the fold needs the list
+    // scrolled before its PLAY button exists to be found.
+    const [gameId, locator] = spec.split('@');
+    const [indexStr, scrollStr] = (locator ?? '').split('/');
+    const buttonIndex = locator === undefined ? 0 : Number(indexStr);
+    const scrolls = Number(scrollStr ?? 0);
     console.log(`\n== ${gameId} ==`);
-    await runGame(page, cdp, gameId, { mid, topHalf, bottomHalf });
+    if (scrolls > 0) {
+      // Drag from the middle of a CARD, not from a gap between them. Scrolling
+      // a list by dragging its contents is the whole gesture on a phone, and it
+      // silently does nothing if any Control in the chain is left at its default
+      // MOUSE_FILTER_STOP -- so this is asserted, not assumed.
+      const before = (await findButtons(page))[0];
+      for (let i = 0; i < scrolls; i++) {
+        await drag(cdp, { x: VIEWPORT.width / 2, y: VIEWPORT.height * 0.80 }, { x: VIEWPORT.width / 2, y: VIEWPORT.height * 0.28 }, 8);
+        await sleep(500);
+      }
+      const after = (await findButtons(page))[0];
+      check(
+        'dragging a card scrolls the game list',
+        before && after && Math.abs(after.y - before.y) > 40,
+        before && after ? `top button y ${before.y.toFixed(0)} -> ${after.y.toFixed(0)}` : 'no buttons',
+      );
+    }
+    await runGame(page, cdp, gameId, {
+      mid, topHalf, bottomHalf, buttonIndex, assert: locator === undefined,
+    });
+    if (locator !== undefined) {
+      await page.reload();
+      await page.waitForSelector('canvas');
+      await sleep(6000);
+      await tap(cdp, { x: VIEWPORT.width / 2, y: VIEWPORT.height * 0.66 });
+      await sleep(1600);
+    }
   }
 
   await browser.close();
@@ -323,12 +386,16 @@ async function runGame(page, cdp, gameId, geom) {
   if (!target) { check(`${gameId}: found its PLAY button`, false); return; }
   await tap(cdp, { x: target.x, y: target.y });
   await sleep(1200);
+  await shot(page, `${gameId}-rules`);
 
   // First play of a game auto-opens the rules card; GOT IT! is the only SUCCESS
   // green button on screen, so find it the same way.
   const gotIt = await findGreen(page);
   if (gotIt) { await tap(cdp, { x: gotIt.x, y: gotIt.y }); }
   await sleep(4500);
+  await shot(page, `${gameId}-match`);
+
+  if (!geom.assert) return; // screenshot-only pass
 
   const before1 = await paddle(page, P1, geom.bottomHalf);
   const before2 = await paddle(page, P2, geom.topHalf);

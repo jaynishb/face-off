@@ -80,6 +80,7 @@ func _build_card(display_name: String, rules_text: String, icon_path: String) ->
 		icon.texture = load(icon_path)
 		icon.custom_minimum_size = Vector2(96, 96)
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.pivot_offset = Vector2(48, 48)
 		diagram.add_child(icon)
 		icon.set_anchors_preset(Control.PRESET_CENTER) # no manual .position alongside this -- see CLAUDE.md

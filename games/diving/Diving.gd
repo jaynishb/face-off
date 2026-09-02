@@ -165,12 +165,14 @@ func _maybe_finish() -> void:
 	end_match(winner, total[1], total[2])
 
 func _draw_half(player: int) -> void:
-	draw_ground(Palette.BG_DIVING)
+	draw_scene("diving", Palette.BG_DIVING)
 	var color := Palette.for_player(player)
 
-	# Water, drawn from water_y down to the player's own edge.
+	# The scene art's own water line sits wherever the crop puts it, so the pool
+	# the physics actually uses is still drawn -- water_y is what _judge() tests
+	# the entry against, and it has to be where the player sees it.
 	var pool := Rect2(play_rect.position.x, water_y, play_rect.size.x, play_rect.end.y - water_y)
-	Juice.sticker_rect(self, pool, Palette.POOL_TEAL, 12.0, 6.0)
+	Juice.rounded_rect(self, pool, Color(Palette.POOL_TEAL, 0.92), 12.0)
 	for i in range(4):
 		var y := water_y + 16.0 * art_scale * (i + 1)
 		draw_line(
@@ -182,12 +184,18 @@ func _draw_half(player: int) -> void:
 
 	if phase[player] == Phase.READY:
 		_draw_power_meter(player, color)
+	if phase[player] == Phase.SPLASH:
+		sprite(Art.game("diving", "splash"), Vector2(pos[player].x, water_y), 96.0 * art_scale)
 	if phase[player] != Phase.DONE:
 		_draw_diver(player, color)
 
 	_draw_scorecard(player, color)
 
 func _draw_board() -> void:
+	var tex := Art.game("diving", "board")
+	if tex:
+		sprite(tex, Vector2(board_tip.x - 30.0 * art_scale, board_tip.y + 14.0 * art_scale), 72.0 * art_scale)
+		return
 	var plank := Rect2(play_rect.position.x, board_tip.y, board_tip.x - play_rect.position.x, 14.0 * art_scale)
 	Juice.sticker_rect(self, plank, Palette.SURFACE, 6.0, 5.0)
 	var post := Rect2(plank.position.x + 20.0 * art_scale, plank.end.y, 22.0 * art_scale, 46.0 * art_scale)
@@ -210,7 +218,24 @@ func _draw_power_meter(player: int, color: Color) -> void:
 
 ## The diver as a rotating capsule with a head, so the somersault count is
 ## readable in flight -- which is the thing the score is actually judging.
+## The pack ships three poses per player -- stand, tuck, entry -- which map
+## exactly onto the three things the score is judging, so the pose itself tells
+## the player what the judges are looking at.
 func _draw_diver(player: int, color: Color) -> void:
+	var pose := "stand"
+	if phase[player] == Phase.FLIGHT:
+		pose = "tuck" if tucking[player] else "entry"
+	var tex := Art.char_for("diving", pose, player)
+	if tex:
+		# Only the airborne poses rotate; a diver still on the board should not
+		# spin, and rotation_total is non-zero the instant flight starts.
+		var spin_angle: float = rotation_total[player] if phase[player] != Phase.READY else 0.0
+		sprite(tex, pos[player], 104.0 * art_scale, false, spin_angle)
+		return
+	_draw_diver_fallback(player, color)
+
+## Primitive stand-in, used only when the generated diver art is missing.
+func _draw_diver_fallback(player: int, color: Color) -> void:
 	var p: Vector2 = pos[player]
 	var angle: float = rotation_total[player]
 	var body_len: float = diver_radius * (1.1 if tucking[player] and phase[player] == Phase.FLIGHT else 2.1)

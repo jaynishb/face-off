@@ -46,10 +46,18 @@ func layout() -> void:
 func _on_layout() -> void:
 	pass
 
+## The transform currently in effect inside _draw_half. Subclasses pass it to
+## the Juice art helpers, which compose with it rather than replacing it -- a
+## helper that called draw_set_transform() directly would clobber this and draw
+## the sprite in screen space, on the wrong half, right way up.
+var base_xform := Transform2D.IDENTITY
+
 func _draw() -> void:
 	for player in [1, 2]:
-		draw_set_transform_matrix(Field.player_xform(player))
+		base_xform = Field.player_xform(player)
+		draw_set_transform_matrix(base_xform)
 		_draw_half(player)
+	base_xform = Transform2D.IDENTITY
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
 ## Subclass hook: draw one player's half in PLAYER space. Called once per player,
@@ -61,3 +69,19 @@ func _draw_half(_player: int) -> void:
 ## texture a player's own side later without touching the shell.
 func draw_ground(color: Color) -> void:
 	draw_rect(Rect2(Vector2.ZERO, half_size), color)
+
+## The generated scene background for this game, cropped to fill the half, with
+## the flat ground colour behind it as the fallback when the art is absent.
+func draw_scene(game_id: String, fallback: Color) -> void:
+	draw_ground(fallback)
+	Juice.cover(self, base_xform, Art.game(game_id, "bg"), Rect2(Vector2.ZERO, half_size))
+
+## Convenience wrappers so a subclass never has to remember to pass base_xform.
+func sprite(
+	texture: Texture2D, center: Vector2, height: float,
+	flip_h: bool = false, rotation: float = 0.0, modulate: Color = Color.WHITE,
+) -> void:
+	Juice.sprite(self, base_xform, texture, center, height, flip_h, rotation, modulate)
+
+func tile_h(texture: Texture2D, rect: Rect2, height: float) -> void:
+	Juice.tile_h(self, base_xform, texture, rect, height)

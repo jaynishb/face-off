@@ -35,6 +35,18 @@ window/stretch/aspect="expand"
 window/handheld/orientation="portrait"
 window/energy_saving/keep_screen_on=true
 
+[importer_defaults]
+
+; The art pack ships at 2-3x its on-screen size (1024px characters drawn at
+; ~120px, 1440px backgrounds covering a ~700px half), so every sprite is
+; minified at runtime. Without mipmaps that minification aliases badly on a
+; phone -- thin outlines shimmer and crawl as anything moves. Set project-wide
+; rather than per-file because .import files are gitignored, so a per-file
+; setting would silently vanish on a fresh clone.
+texture={
+"mipmaps/generate": true
+}
+
 [input_devices]
 
 pointing/emulate_touch_from_mouse=true

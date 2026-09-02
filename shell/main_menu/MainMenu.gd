@@ -23,11 +23,11 @@ func _ready() -> void:
 	GameManager.clear_session_tally()
 	AudioManager.play_menu_music()
 
-	# Plain ASCII text, not a symbol glyph -- the default engine font has no
-	# coverage for gear/emoji codepoints and silently draws a tofu box instead
-	# (same class of bug fixed for game-tile emoji; see CLAUDE.md).
-	_settings_btn = UIUtil.make_button("SET", 20, Palette.SURFACE)
-	_settings_btn.custom_minimum_size = Vector2(64, 64)
+	# The gear is a real icon from the art pack, with "SET" as the fallback label.
+	# The fallback is not decoration: the default engine font has no coverage for
+	# gear/emoji codepoints and silently draws a tofu box, so a missing icon must
+	# degrade to ASCII rather than to a symbol glyph (see CLAUDE.md).
+	_settings_btn = UIUtil.make_icon_button("gear", "SET", 64, Palette.SURFACE)
 	_settings_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/settings/Settings.tscn"))
 	add_child(_settings_btn)
 
@@ -44,8 +44,11 @@ func _ready() -> void:
 	_subtitle = UIUtil.make_label("Two players. One phone. No wifi.", 22)
 	add_child(_subtitle)
 
-	_p1_mascot = _build_mascot("res://shared/art/mascot_p1.svg", false)
-	_p2_mascot = _build_mascot("res://shared/art/mascot_p2.svg", true)
+	# The generated mascots face the viewer, so the P2 copy is mirrored in code
+	# rather than shipped as a third file -- that also guarantees the two are
+	# exactly the same size and weight, which the symmetry rule requires.
+	_p1_mascot = _build_mascot(_mascot_texture(1), false)
+	_p2_mascot = _build_mascot(_mascot_texture(2), true)
 	UIUtil.idle_float(_p1_mascot, 10.0, 1.6, 0.0)
 	UIUtil.idle_float(_p2_mascot, 10.0, 1.6, 0.3)
 
@@ -99,10 +102,20 @@ func _relayout() -> void:
 	_remove_ads_btn.size = ads_size
 	_remove_ads_btn.position = Vector2((w - ads_size.x) * 0.5, h * 0.62 + play_size.y + 28)
 
-func _build_mascot(texture_path: String, flipped: bool) -> TextureRect:
+## Generated mascot if the art pack is installed, otherwise the hand-authored SVG
+## the project shipped with -- the menu should never come up empty-handed.
+func _mascot_texture(player: int) -> Texture2D:
+	var generated := Art.shell("mascot_p%d" % player)
+	if generated:
+		return generated
+	var svg := "res://shared/art/mascot_p%d.svg" % player
+	return load(svg) if ResourceLoader.exists(svg) else null
+
+func _build_mascot(texture: Texture2D, flipped: bool) -> TextureRect:
 	var mascot := TextureRect.new()
-	mascot.texture = load(texture_path)
+	mascot.texture = texture
 	mascot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mascot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	if flipped:
 		mascot.scale.x = -1.0
 	add_child(mascot)

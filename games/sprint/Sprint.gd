@@ -40,12 +40,17 @@ func _init() -> void:
 	theme_dark = true
 
 func _on_layout() -> void:
-	var band := play_rect.size.y * 0.30
+	# The scene art puts the crowd nearest the seam and the running track at the
+	# player's own edge -- which is the right perspective for someone looking at
+	# their half from their end of the phone. So the lane sits out on the painted
+	# track and BOTH pads stack inboard of it, rather than the pads bracketing a
+	# lane stranded on the infield grass.
+	var band := play_rect.size.y * 0.28
 	_button_rects = {
 		ZONE_NEAR: Rect2(play_rect.position, Vector2(play_rect.size.x, band)),
-		ZONE_FAR: Rect2(Vector2(play_rect.position.x, play_rect.end.y - band), Vector2(play_rect.size.x, band)),
+		ZONE_FAR: Rect2(Vector2(play_rect.position.x, play_rect.position.y + band + 6.0), Vector2(play_rect.size.x, band)),
 	}
-	lane_y = play_rect.position.y + play_rect.size.y * 0.5
+	lane_y = play_rect.position.y + play_rect.size.y * 0.82
 	track_start = play_rect.position.x + 40.0 * art_scale
 	track_end = play_rect.end.x - 40.0 * art_scale
 
@@ -108,24 +113,31 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw_half(player: int) -> void:
-	draw_ground(Palette.BG_SPRINT)
+	draw_scene("sprint", Palette.BG_SPRINT)
 	_draw_track(player)
 	_draw_pad(player, ZONE_NEAR)
 	_draw_pad(player, ZONE_FAR)
 
 	var t: float = distance[player] / RACE_DISTANCE
-	_draw_runner(Vector2(lerpf(track_start, track_end, t), lane_y), Palette.for_player(player), _stride[player])
+	_draw_runner(player, Vector2(lerpf(track_start, track_end, t), lane_y), _stride[player])
 
 func _draw_track(player: int) -> void:
 	var h := 46.0 * art_scale
-	var track := Rect2(track_start - 16.0, lane_y - h, (track_end - track_start) + 32.0, h * 2.0)
-	Juice.sticker_rect(self, track, Palette.TRACK_RED, 10.0, 6.0)
-	draw_line(Vector2(track.position.x + 6.0, lane_y - h * 0.55), Vector2(track.end.x - 6.0, lane_y - h * 0.55), Color(Palette.SURFACE, 0.55), 3.0)
-	draw_line(Vector2(track.position.x + 6.0, lane_y + h * 0.55), Vector2(track.end.x - 6.0, lane_y + h * 0.55), Color(Palette.SURFACE, 0.55), 3.0)
+	# The track surface is the scene art's; only the lane the runner occupies is
+	# marked, so there is exactly one track on screen rather than a drawn one
+	# floating over a painted one.
+	if Art.game("sprint", "bg") == null:
+		Juice.sticker_rect(self, Rect2(track_start - 16.0, lane_y - h, (track_end - track_start) + 32.0, h * 2.0), Palette.TRACK_RED, 10.0, 6.0)
+	draw_line(Vector2(track_start - 16.0, lane_y - h * 0.62), Vector2(track_end + 16.0, lane_y - h * 0.62), Color(Palette.SURFACE, 0.7), 3.0)
+	draw_line(Vector2(track_start - 16.0, lane_y + h * 0.62), Vector2(track_end + 16.0, lane_y + h * 0.62), Color(Palette.SURFACE, 0.7), 3.0)
 
-	# Finish line, plus a marker showing where the opponent has reached, so the
+	# Finish gate, plus a marker showing where the opponent has reached, so the
 	# race is legible without either player looking at the other's half.
-	draw_line(Vector2(track_end, lane_y - h), Vector2(track_end, lane_y + h), Palette.SURFACE, 6.0)
+	var gate := Art.game("sprint", "finish")
+	if gate:
+		sprite(gate, Vector2(track_end, lane_y - h * 0.25), h * 2.4)
+	else:
+		draw_line(Vector2(track_end, lane_y - h), Vector2(track_end, lane_y + h), Palette.SURFACE, 6.0)
 	var other := 2 if player == 1 else 1
 	var ox := lerpf(track_start, track_end, distance[other] / RACE_DISTANCE)
 	draw_line(Vector2(ox, lane_y - h), Vector2(ox, lane_y + h), Color(Palette.for_player(other), 0.55), 4.0)
@@ -138,7 +150,7 @@ func _draw_pad(player: int, zone: int) -> void:
 	var is_next: bool = _last_zone[player] != zone
 	var press: float = _flash.get("%d_%d" % [player, zone], 0.0) / 0.12
 
-	var size := Vector2(minf(rect.size.x * 0.58, 300.0), minf(rect.size.y * 0.66, 96.0))
+	var size := Vector2(minf(rect.size.x * 0.58, 300.0), minf(rect.size.y * 0.72, 92.0))
 	var btn := Rect2(rect.get_center() - size * 0.5, size)
 	btn.position.y += 5.0 * press
 	var fill: Color = color if is_next else color.lerp(Palette.BG_SPRINT, 0.5)
@@ -155,9 +167,21 @@ func _draw_pad(player: int, zone: int) -> void:
 		Palette.SURFACE if is_next else Color(Palette.SURFACE, 0.55),
 	)
 
-## A stick-and-blob runner whose legs and arms swing on `stride`, so speed reads
-## from the animation and not only from the position.
-func _draw_runner(pos: Vector2, color: Color, stride: float) -> void:
+## Two-frame run cycle: the pack ships a stride and a lean pose per player, and
+## `stride` alternates between them at a rate proportional to speed, so how fast
+## someone is running reads from the animation and not only from the position.
+func _draw_runner(player: int, pos: Vector2, stride: float) -> void:
+	var frame := "char" if stride < 0.5 else "lean"
+	var tex := Art.char_for("sprint", frame, player)
+	if tex:
+		# Bob with the stride so the run has weight rather than gliding.
+		var bob := absf(sin(stride * TAU)) * 4.0 * art_scale
+		sprite(tex, pos + Vector2(0.0, -22.0 * art_scale - bob), 118.0 * art_scale)
+		return
+	_draw_runner_fallback(pos, Palette.for_player(player), stride)
+
+## Primitive stand-in, used only when the generated runner art is missing.
+func _draw_runner_fallback(pos: Vector2, color: Color, stride: float) -> void:
 	var s := art_scale
 	var swing: float = sin(stride * TAU)
 	var lift: float = absf(cos(stride * TAU))

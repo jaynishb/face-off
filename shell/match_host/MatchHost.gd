@@ -101,19 +101,19 @@ func _build_hud() -> void:
 	# half the roster. A single corner button (as the reference app has) is worse
 	# still: it would be out of reach and upside down for one player, which
 	# CLAUDE.md's "identical control area for both players" rule does not allow.
-	_exit_btn = UIUtil.make_round_button("X", 52, Palette.SURFACE)
+	_exit_btn = UIUtil.make_icon_button("close", "X", 52, Palette.SURFACE)
 	_exit_btn.pressed.connect(_on_exit_pressed)
 	_hud.add_child(_exit_btn)
 
-	_pause_btn = UIUtil.make_round_button("II", 52, Palette.SURFACE)
+	_pause_btn = UIUtil.make_icon_button("pause", "II", 52, Palette.SURFACE)
 	_pause_btn.pressed.connect(_on_pause_pressed)
 	_hud.add_child(_pause_btn)
 
-	_exit_btn_alt = UIUtil.make_round_button("X", 52, Palette.SURFACE)
+	_exit_btn_alt = UIUtil.make_icon_button("close", "X", 52, Palette.SURFACE)
 	_exit_btn_alt.pressed.connect(_on_exit_pressed)
 	_hud.add_child(_exit_btn_alt)
 
-	_pause_btn_alt = UIUtil.make_round_button("II", 52, Palette.SURFACE)
+	_pause_btn_alt = UIUtil.make_icon_button("pause", "II", 52, Palette.SURFACE)
 	_pause_btn_alt.pressed.connect(_on_pause_pressed)
 	_hud.add_child(_pause_btn_alt)
 
@@ -249,10 +249,10 @@ func _build_pause_panel(_player: int) -> Control:
 	score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(score)
 
-	_add_panel_button(root, "CONTINUE PLAYING", Palette.SUCCESS, half.y * 0.44, _on_resume_pressed)
-	_add_panel_button(root, "RESTART MATCH", Palette.ACCENT, half.y * 0.56, _on_restart_pressed)
-	_add_panel_button(root, "HOW TO PLAY", Palette.SURFACE, half.y * 0.68, _on_how_to_play_pressed)
-	_add_panel_button(root, "MAIN MENU", Palette.SURFACE, half.y * 0.80, _to_main_menu)
+	_add_panel_button(root, "CONTINUE PLAYING", Palette.SUCCESS, half.y * 0.44, _on_resume_pressed, "pause")
+	_add_panel_button(root, "RESTART MATCH", Palette.ACCENT, half.y * 0.56, _on_restart_pressed, "restart")
+	_add_panel_button(root, "HOW TO PLAY", Palette.SURFACE, half.y * 0.68, _on_how_to_play_pressed, "question")
+	_add_panel_button(root, "MAIN MENU", Palette.SURFACE, half.y * 0.80, _to_main_menu, "home")
 	return root
 
 func _build_exit_panel(_player: int) -> Control:
@@ -267,12 +267,17 @@ func _build_exit_panel(_player: int) -> Control:
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(prompt)
 
-	_add_panel_button(root, "KEEP PLAYING", Palette.SUCCESS, half.y * 0.50, _on_resume_pressed)
-	_add_panel_button(root, "EXIT TO MENU", Palette.PLAYER_1, half.y * 0.66, _to_main_menu)
+	_add_panel_button(root, "KEEP PLAYING", Palette.SUCCESS, half.y * 0.50, _on_resume_pressed, "pause")
+	_add_panel_button(root, "EXIT TO MENU", Palette.PLAYER_1, half.y * 0.66, _to_main_menu, "home")
 	return root
 
-func _add_panel_button(parent: Control, text: String, color: Color, y: float, handler: Callable) -> void:
+func _add_panel_button(
+	parent: Control, text: String, color: Color, y: float, handler: Callable,
+	icon_name: String = "",
+) -> void:
 	var btn := UIUtil.make_button(text, 24, color)
+	if icon_name != "":
+		UIUtil.add_button_icon(btn, icon_name)
 	btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	btn.position = Vector2((Field.half_size().x - btn.size.x) * 0.5, y)
 	btn.pressed.connect(handler)

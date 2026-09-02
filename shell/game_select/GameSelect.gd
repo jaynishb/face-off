@@ -20,8 +20,7 @@ func _ready() -> void:
 	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 	AudioManager.play_menu_music()
 
-	_back_btn = UIUtil.make_button("<", 28, Palette.SURFACE)
-	_back_btn.custom_minimum_size = Vector2(64, 64)
+	_back_btn = UIUtil.make_icon_button("back", "<", 64, Palette.SURFACE)
 	_back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
 	add_child(_back_btn)
 
@@ -36,6 +35,12 @@ func _ready() -> void:
 
 	_column = VBoxContainer.new()
 	_column.add_theme_constant_override("separation", 18)
+	# Every Control in the chain between the ScrollContainer and the cards has to
+	# be IGNORE, or the first one that is not swallows the drag and the list can
+	# only be scrolled from the thin gaps that happen to miss all of them.
+	# Container inherits Control's STOP default, so the containers need this as
+	# much as the cards do.
+	_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_scroll.add_child(_column)
 
 	var index := 0
@@ -45,6 +50,7 @@ func _ready() -> void:
 		grid.columns = COLUMNS
 		grid.add_theme_constant_override("h_separation", 16)
 		grid.add_theme_constant_override("v_separation", 16)
+		grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_column.add_child(grid)
 		_grids.append(grid)
 
@@ -83,6 +89,7 @@ func _build_section_header(text: String) -> Control:
 	var header := UIUtil.make_label(text, 22, Color(Palette.INK, 0.65))
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	header.custom_minimum_size = Vector2(0, 34)
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return header
 
 func _build_card(game_id: String) -> Control:
@@ -92,6 +99,12 @@ func _build_card(game_id: String) -> Control:
 	# [?] button can both be positioned freely without a Container forcing every
 	# direct child to the same rect.
 	var card := Control.new()
+	# A Control defaults to MOUSE_FILTER_STOP, which swallows the drag before the
+	# ScrollContainer sees it -- so flicking the list from anywhere on a card did
+	# nothing, and only the thin gaps between cards scrolled. The two buttons
+	# inside still receive their own presses; they hit-test with their own filter
+	# regardless of their parent's. Same class of bug as MatchHost's root filter.
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var panel := Panel.new()
 	var style := StyleBoxFlat.new()
@@ -134,6 +147,10 @@ func _build_card(game_id: String) -> Control:
 		icon.texture = load(art_path)
 		icon.custom_minimum_size = Vector2(84, 84)
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		# Without this the 600x450 thumbnail becomes the control's MINIMUM size --
+		# custom_minimum_size is a floor, never a cap -- and the art bursts out of
+		# the card over the name and PLAY button below it.
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		icon.pivot_offset = Vector2(42, 42)
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -160,8 +177,7 @@ func _build_card(game_id: String) -> Control:
 	# hangs outside and overlaps the neighbouring card -- and a manual .position
 	# on top of a preset would double-offset (see CLAUDE.md). Pure anchors plus
 	# offsets is the one combination that behaves.
-	var rules_btn := UIUtil.make_button("?", 18, Palette.SURFACE)
-	rules_btn.custom_minimum_size = Vector2(38, 38)
+	var rules_btn := UIUtil.make_icon_button("question", "?", 38, Palette.SURFACE)
 	rules_btn.anchor_left = 1.0
 	rules_btn.anchor_right = 1.0
 	rules_btn.offset_left = -46.0

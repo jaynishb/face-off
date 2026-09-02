@@ -147,15 +147,15 @@ func _check_hurdle(player: int) -> void:
 			Input.vibrate_handheld(25)
 
 func _draw_half(player: int) -> void:
-	draw_ground(Palette.BG_HORSE)
-
-	var arena := Rect2(play_rect.position.x, ground_y, play_rect.size.x, play_rect.end.y - ground_y)
-	Juice.sticker_rect(self, arena, Palette.PADDOCK_SAND, 10.0, 6.0)
+	draw_scene("horse_jump", Palette.BG_HORSE)
+	if Art.game("horse_jump", "bg") == null:
+		var arena := Rect2(play_rect.position.x, ground_y, play_rect.size.x, play_rect.end.y - ground_y)
+		Juice.sticker_rect(self, arena, Palette.PADDOCK_SAND, 10.0, 6.0)
+		_draw_fence()
 	draw_line(
 		Vector2(play_rect.position.x, ground_y), Vector2(play_rect.end.x, ground_y),
-		Color(Palette.OUTLINE, 0.35), 4.0,
+		Color(Palette.OUTLINE, 0.18), 3.0,
 	)
-	_draw_fence()
 
 	# The course scrolls past a fixed rider, so the player's eye stays in one
 	# place rather than tracking a shrinking figure across the half.
@@ -182,6 +182,10 @@ func _draw_fence() -> void:
 		x += 74.0 * art_scale
 
 func _draw_hurdle(x: float) -> void:
+	var tex := Art.game("horse_jump", "hurdle")
+	if tex:
+		sprite(tex, Vector2(x, ground_y - hurdle_height * 0.5), hurdle_height * 1.3)
+		return
 	var w := HURDLE_WIDTH * art_scale
 	for side in [-1.0, 1.0]:
 		var post := Rect2(x + side * w * 0.5 - 5.0 * art_scale, ground_y - hurdle_height, 9.0 * art_scale, hurdle_height)
@@ -203,6 +207,21 @@ func _draw_finish(x: float) -> void:
 ## Horse and rider as chunky blocks with a gallop bob -- enough to read as an
 ## animal in motion until the generated art lands.
 func _draw_horse(player: int) -> void:
+	var airborne: bool = air[player] > 4.0
+	var tex := Art.char_for("horse_jump", "jump" if airborne else "gallop", player)
+	if tex:
+		var bob: float = 0.0 if airborne else sin(_gallop[player] * TAU) * 4.0 * art_scale
+		var tilt: float = sin(stumble[player] * 40.0) * 0.25 if stumble[player] > 0.0 else 0.0
+		sprite(
+			tex,
+			Vector2(rider_x, ground_y - air[player] - bob - 46.0 * art_scale),
+			132.0 * art_scale, false, tilt,
+		)
+		return
+	_draw_horse_fallback(player)
+
+## Primitive stand-in, used only when the generated horse art is missing.
+func _draw_horse_fallback(player: int) -> void:
 	var s := art_scale
 	var color := Palette.for_player(player)
 	var bob: float = sin(_gallop[player] * TAU) * 4.0 * s
