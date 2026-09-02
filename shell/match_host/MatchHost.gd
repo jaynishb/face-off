@@ -9,7 +9,7 @@ extends Control
 ## is drawn twice, once per half, with Player 2's copy rotated by PI — otherwise
 ## half the audience reads the countdown, the win banner and the pause menu
 ## upside down. UIUtil.mirror_for_players() does that; the only single-copy
-## chrome is what is rotationally symmetric anyway (the pause/exit discs).
+## chrome is what is rotationally symmetric anyway (the score pills' digits).
 
 var _game: MiniGame
 var _p1_score_label: Label
@@ -19,6 +19,9 @@ var _bg: ColorRect
 var _bg_tween: Tween
 var _exit_btn: Button
 var _pause_btn: Button
+## A second X/pause pair, built only for SHARED-board games. See _relayout.
+var _exit_btn_alt: Button
+var _pause_btn_alt: Button
 var _divider: ColorRect
 var _hud: Control
 
@@ -90,11 +93,14 @@ func _build_hud() -> void:
 	_p2_score_label = UIUtil.make_score_pill(2)
 	_hud.add_child(_p2_score_label)
 
-	# One shared cluster in the middle of the seam, equidistant from both
-	# players. A single top-left corner button (as the reference app has) would
-	# be out of reach and upside down for the bottom player, which CLAUDE.md's
-	# "identical control area for both players" rule does not allow. "II" and "X"
-	# are rotationally near-symmetric, so one copy reads fine from either end.
+	# Exit and pause live at each player's OWN outer corner, one cluster per
+	# half, both wired to the same handlers. A single cluster in the middle of
+	# the seam was tried and rejected: the seam is the centre of the screen, and
+	# the centre of the screen is exactly where a shared board, a communal dohyo
+	# and a centre circle all live -- the discs sat on top of the playfield in
+	# half the roster. A single corner button (as the reference app has) is worse
+	# still: it would be out of reach and upside down for one player, which
+	# CLAUDE.md's "identical control area for both players" rule does not allow.
 	_exit_btn = UIUtil.make_round_button("X", 52, Palette.SURFACE)
 	_exit_btn.pressed.connect(_on_exit_pressed)
 	_hud.add_child(_exit_btn)
@@ -102,6 +108,14 @@ func _build_hud() -> void:
 	_pause_btn = UIUtil.make_round_button("II", 52, Palette.SURFACE)
 	_pause_btn.pressed.connect(_on_pause_pressed)
 	_hud.add_child(_pause_btn)
+
+	_exit_btn_alt = UIUtil.make_round_button("X", 52, Palette.SURFACE)
+	_exit_btn_alt.pressed.connect(_on_exit_pressed)
+	_hud.add_child(_exit_btn_alt)
+
+	_pause_btn_alt = UIUtil.make_round_button("II", 52, Palette.SURFACE)
+	_pause_btn_alt.pressed.connect(_on_pause_pressed)
+	_hud.add_child(_pause_btn_alt)
 
 func _build_divider() -> void:
 	# A shared board is not split between the players, so drawing a divider
@@ -116,7 +130,6 @@ func _build_divider() -> void:
 ## Single place where every screen-derived position is (re)computed, so the HUD
 ## and the game can never drift apart from the actual viewport.
 func _relayout() -> void:
-	var seam := Field.seam_rect()
 	var mid := Field.split_y()
 	var pill_h: float = _p1_score_label.size.y
 
@@ -134,9 +147,18 @@ func _relayout() -> void:
 	_p2_score_label.pivot_offset = _p2_score_label.size * 0.5
 	_p2_score_label.rotation = PI
 
-	var cx := Field.width() * 0.5
-	_exit_btn.position = Vector2(cx - 60, seam.position.y + (seam.size.y - 52.0) * 0.5)
-	_pause_btn.position = Vector2(cx + 8, seam.position.y + (seam.size.y - 52.0) * 0.5)
+	# One cluster per player, each in that player's own outer corner and rotated
+	# to face them. Right-hand side, so they never collide with the score pills.
+	var right := Field.width() - 52.0 - 20.0
+	var bottom_y := Field.height() - Field.SAFE_OUTER - 52.0 - 6.0
+	var top_y := Field.SAFE_OUTER + 6.0
+	_pause_btn.position = Vector2(right, bottom_y)
+	_exit_btn.position = Vector2(right - 60.0, bottom_y)
+	_pause_btn_alt.position = Vector2(right, top_y)
+	_exit_btn_alt.position = Vector2(right - 60.0, top_y)
+	for btn: Button in [_pause_btn_alt, _exit_btn_alt]:
+		btn.pivot_offset = btn.size * 0.5
+		btn.rotation = PI
 
 	if _divider:
 		# Must sit exactly on Field.split_y() -- this line is the promise the

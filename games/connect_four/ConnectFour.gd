@@ -183,15 +183,11 @@ func _reset_board() -> void:
 func _draw() -> void:
 	var board_rect := Rect2(origin, Vector2(COLS * cell, ROWS * cell))
 
-	# The next token waits at the board's edge, so each player can see what
-	# they're about to play without reading any text. Drawn before the slab so
-	# it tucks behind it, as if queued in the feed slot.
-	if not _turn_locked:
-		# Drawn on both flanks, so the player on either end of the phone can see
-		# whose token is queued without craning over the board.
-		var wy := origin.y + ROWS * cell * 0.5
-		Juice.cartoon_circle(self, Vector2(origin.x - cell * 0.45, wy), cell * 0.35, Palette.for_player(current_turn))
-		Juice.cartoon_circle(self, Vector2(origin.x + COLS * cell + cell * 0.45, wy), cell * 0.35, Palette.for_player(current_turn))
+	# The queued-token indicator that used to sit at each flank is gone: in
+	# portrait the board spans nearly the full width, so both copies were drawn
+	# past the screen edge and rendered as clipped half-circles. The mirrored
+	# turn banners below already say whose turn it is, and they do it the
+	# accessible way -- colour AND shape AND text.
 
 	# A charcoal slab with holes punched through it -- the shape Connect Four
 	# is actually recognised by. The board had no fill at all before, so cream

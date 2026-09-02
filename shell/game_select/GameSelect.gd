@@ -116,8 +116,20 @@ func _build_card(game_id: String) -> Control:
 
 	# Thumbnails and icons are generated art that may not have landed yet, so
 	# every load is guarded -- a missing file leaves a blank slot, never a crash.
+	# Generated art may not have landed yet; an empty slot would leave the card
+	# looking half-built, so reserve the space with a neutral placeholder.
 	var art_path := _card_art_path(game_id, meta)
-	if art_path != "":
+	if art_path == "":
+		var placeholder := Panel.new()
+		var ph_style := StyleBoxFlat.new()
+		ph_style.bg_color = Color(Palette.INK, 0.07)
+		ph_style.set_corner_radius_all(16)
+		placeholder.add_theme_stylebox_override("panel", ph_style)
+		placeholder.custom_minimum_size = Vector2(84, 84)
+		placeholder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(placeholder)
+	else:
 		var icon := TextureRect.new()
 		icon.texture = load(art_path)
 		icon.custom_minimum_size = Vector2(84, 84)
@@ -143,9 +155,19 @@ func _build_card(game_id: String) -> Control:
 	play_btn.pressed.connect(func(): _on_card_pressed(game_id))
 	vbox.add_child(play_btn)
 
+	# Anchored to the card's top-right with explicit offsets. PRESET_TOP_RIGHT
+	# alone anchors the button's LEFT edge to the right edge of the card, so it
+	# hangs outside and overlaps the neighbouring card -- and a manual .position
+	# on top of a preset would double-offset (see CLAUDE.md). Pure anchors plus
+	# offsets is the one combination that behaves.
 	var rules_btn := UIUtil.make_button("?", 18, Palette.SURFACE)
 	rules_btn.custom_minimum_size = Vector2(38, 38)
-	rules_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	rules_btn.anchor_left = 1.0
+	rules_btn.anchor_right = 1.0
+	rules_btn.offset_left = -46.0
+	rules_btn.offset_right = -8.0
+	rules_btn.offset_top = 8.0
+	rules_btn.offset_bottom = 46.0
 	rules_btn.pressed.connect(func(): _show_rules(game_id))
 	card.add_child(rules_btn)
 

@@ -157,7 +157,16 @@ func _check_games_layout() -> void:
 		var scene_path: String = meta.get("scene", "")
 		if not ResourceLoader.exists(scene_path):
 			continue # not built yet -- GameSelect renders it as SOON
-		var game: MiniGame = load(scene_path).instantiate()
+
+		# A script that fails to parse still yields a scene whose root is a bare
+		# Node2D, so instantiate() succeeds and every later check quietly passes
+		# over a game that cannot even load. Assert the type before trusting it.
+		var instance: Node = load(scene_path).instantiate()
+		if not (instance is MiniGame):
+			_assert(false, "%s did not instantiate as a MiniGame (script failed to load?)" % game_id)
+			instance.free()
+			continue
+		var game: MiniGame = instance
 		# Each game connects to InputManager in setup(); reset the shared modes
 		# first so one game's leftovers cannot mask the next one's bug.
 		InputManager.configure_zones([])
