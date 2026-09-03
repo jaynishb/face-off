@@ -27,6 +27,8 @@ var _progress := 0.0
 var _last_tick_second := -1
 var _countdown_center := Vector2.ZERO
 
+var _content_top := 0.0
+
 func _init() -> void:
 	game_id = "movie_guess"
 	display_name = "Movie Guess"
@@ -90,8 +92,11 @@ func setup(_config: Dictionary) -> void:
 func layout() -> void:
 	if not _card:
 		return
-	var mid := Field.mid_x()
-	var top := Field.top() + 20.0
+	var mid := Field.center().x
+	# Centred in the play area rather than pinned to its top -- see
+	# PartyGame.content_top(). The height is this game's own content block.
+	_content_top = content_top(540.0)
+	var top := _content_top
 
 	_hint_label.position = Vector2(mid - 200, top)
 	_hint_label.size = Vector2(400, 30)

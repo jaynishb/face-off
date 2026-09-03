@@ -58,6 +58,8 @@ var _rolling_count := 0
 var _hint_label: Label
 var _total_label: Label
 
+var _content_top := 0.0
+
 func _init() -> void:
 	game_id = "dice_roller"
 	display_name = "Dice Roller"
@@ -87,8 +89,11 @@ func setup(_config: Dictionary) -> void:
 func layout() -> void:
 	if not _hint_label:
 		return
-	var mid := Field.mid_x()
-	var top := Field.top() + 20.0
+	var mid := Field.center().x
+	# Centred in the play area rather than pinned to its top -- see
+	# PartyGame.content_top(). The height is this game's own content block.
+	_content_top = content_top(420.0)
+	var top := _content_top
 
 	_hint_label.position = Vector2(mid - 160, top + 20)
 	_hint_label.size = Vector2(320, 32)
@@ -100,7 +105,7 @@ func _on_tap(_player: int, _zone: int, _position: Vector2) -> void:
 	_on_roll_pressed()
 
 func _layout_dice() -> void:
-	var mid := Field.mid_x()
+	var mid := Field.center().x
 	var total_width := _dice.size() * DIE_SIZE + (_dice.size() - 1) * DIE_GAP
 	var start_x := mid - total_width * 0.5 + DIE_SIZE * 0.5
 	for i in range(_dice.size()):
@@ -203,7 +208,10 @@ func _on_all_landed() -> void:
 		Input.vibrate_handheld(30)
 
 func _draw() -> void:
-	var y := Field.top() + 280.0
+	# The SAME anchor the labels use, not a second copy of it: two
+	# definitions of one origin is how the dice drift away from the
+	# total they belong to.
+	var y := _content_top + 280.0
 	for d in _dice:
 		_draw_shadow(Vector2(d.x, y), d.height, d.squash)
 		for i in range(d.trail.size()):

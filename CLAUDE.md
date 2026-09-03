@@ -4,9 +4,11 @@ Guidance for Claude Code (and any dev) working in this repo. Read `FACE_OFF_PRD.
 
 ## What this is
 
-**Face Off** — a single mobile app containing 6 (launch) → 10 (post-launch) very short (20–60s) two-player games, both players playing simultaneously on one shared phone screen, split left/right. Fully offline. No login, no server, no network calls except the ad SDK.
+**Face Off** — a single mobile app containing 12 very short (20–60s) two-player games, both players playing simultaneously on one shared phone screen, split top/bottom. Fully offline. No login, no server, no network calls except the ad SDK.
 
-Landscape-locked **during actual gameplay** — the split-screen physics genuinely needs the width. No tablet layout. No online multiplayer, no AI opponent, no accounts, no cloud save — see PRD §13 for the full "out of scope" list. Don't build any of that even if it seems like a natural extension. (Menus/shell screens are portrait-friendly on the web build as of the "Portrait support for shell screens" section below — that's a deliberate narrowing of the original "no portrait mode, anywhere" stance, not an oversight.)
+**Portrait-locked. Top half = Player 2, bottom half = Player 1.** The phone lies flat between two players who face each other across it, so Player 2's half is rotated 180° in-engine and reads right-way-up to them. No landscape mode, no tablet layout. No online multiplayer, no AI opponent, no accounts, no cloud save — see PRD §13 for the full "out of scope" list. Don't build any of that even if it seems like a natural extension.
+
+(This supersedes the earlier landscape/left-right design. Everything below describes the portrait build; older status sections are kept for their bug history, and where they describe a left/right split they are historical, not current.)
 
 ## Engine & stack
 
@@ -31,13 +33,10 @@ Landscape-locked **during actual gameplay** — the split-screen physics genuine
     Results.tscn
     Settings.tscn
   /games
-    /air_hockey
-    /ping_pong
-    /tic_tac_toe
-    /tap_race
-    /connect_four
-    /sumo_blob
-    ... (post-launch: mirror_match, hot_potato, tower_topple, colour_flood)
+    /air_hockey  /ping_pong  /tic_tac_toe        # CLASSIC
+    /tap_race    /connect_four  /sumo_blob
+    /basketball  /sprint     /diving              # SPORTS
+    /horse_jump  /swimming   /archery
   /shared
     /components            # Timer, ScoreDisplay, CountdownOverlay, WinBanner
     /art                   # shared sprites, fonts, palette resource
@@ -46,7 +45,7 @@ Landscape-locked **during actual gameplay** — the split-screen physics genuine
 
 ## The MiniGame contract — the most important rule in this codebase
 
-Every game scene extends this and only this. The shell (menu, results, ads, scoring) never contains game-specific logic — it only talks to games through this contract.
+Every game scene extends this and only this. The shell (menu, results, ads, scoring) never contains game-specific logic — it only talks to games through this contract, and branches on `view_mode`, never on `game_id`.
 
 ```gdscript
 extends Node2D
@@ -58,27 +57,78 @@ var rules_text: String
 var rules_icon: Texture2D
 var match_duration: float   # 0 = untimed / first-to-win
 
+enum ViewMode { SPLIT, SHARED, FIELD }
+var view_mode: int
+var input_space: int        # InputManager.Space.SCREEN or .PLAYER
+
 func setup(config: Dictionary) -> void
+func layout() -> void       # after setup AND on every resize; must be idempotent
 func start_match() -> void
 func end_match(winner: int) -> void   # 1, 2, or 0 for draw
 
 signal match_ended(winner: int, score_p1: int, score_p2: int)
+signal score_updated(score_p1: int, score_p2: int)
+signal theme_changed(bg: Color)
 ```
+
+**The three view modes** decide how a game occupies the portrait screen:
+
+- **SPLIT** — each player has their own private, mirrored half. Extend `shared/SplitGame.gd`,
+  author the half **once** in PLAYER space, implement `_draw_half(player)`; the base draws it
+  twice under `player_xform()`. Both players' zone rects come out as literally the same
+  `Rect2`, so symmetry is structural rather than something to police in review. Tap Race and
+  all six sports games.
+- **SHARED** — one communal board straddling the seam, drawn upright in SCREEN space, turn
+  ownership from `InputManager.set_shared_board_turn()`. Any *text* it draws (a turn banner)
+  must be drawn twice, the second copy rotated. Tic-Tac-Toe, Connect Four.
+- **FIELD** — one continuous field with a single shared object both players watch. Drawn
+  upright, geometry symmetric about the seam. Never rotated — rotating half a shared rink
+  would tear it in two. Air Hockey, Ping Pong, Sumo Blob.
+
+**Anything a player must READ is drawn twice** — countdown, win banner, results, pause and
+exit panels, in-match rules card — via `UIUtil.mirror_for_players()`, or half the audience
+reads it upside down. The exception is chrome with no orientation: the pause and exit discs
+sit at each player's own outer corner rather than in the seam, because the seam is the centre
+of the screen and the centre of the screen is where shared boards and centre circles live.
 
 Adding a new game = new folder under `/games` + one line in the game registry. If you find yourself editing shell code to add a game, stop — the contract is being violated somewhere.
 
-## InputManager — build first, touch with care
+## Geometry and input — the two rules that matter most
 
-All player input goes through one autoload. No game should read raw `InputEvent` touch data directly.
+**`autoload/Field.gd` owns all geometry AND the 180° rotation.** There are exactly two
+coordinate spaces, and `Field.player_xform(player)` is the single definition of the
+mapping between them:
+
+- **SCREEN** — raw viewport pixels. What `InputEvent.position` carries, and what every
+  game with one shared object (a puck, a ball, a platform) and every shared board draws in.
+- **PLAYER** — per-player local pixels. `(0,0)` is that player's own top-left *as they read
+  it*; `+y` runs from the seam outward toward their own edge. Identical for both players,
+  so "y = 0 is the net, y = half_size().y is my back wall" holds for P1 and P2 alike.
+
+Canvas gameplay consumes the transform via `draw_set_transform_matrix(Field.player_xform(p))`
+(**always reset to `Transform2D.IDENTITY` afterwards** — a live transform leaks into every
+later draw call in the frame, and the symptom looks nothing like the cause). Controls consume
+it via `UIUtil.mount_for_player()`. `InputManager` inverts it to deliver touches. One matrix,
+both directions, so what is drawn and what is touched cannot drift apart.
+
+**Never hardcode a screen dimension, and never derive a size from one you guessed.** Every
+literal tuned against the old 1280-wide landscape field is wrong here — some crash, and the
+dangerous ones merely look wrong and ship. Ask `Field`.
+
+**`autoload/InputManager.gd`** is still the only place raw `InputEvent` touch data is read:
 
 ```gdscript
-signal player_pressed(player: int, zone: int, position: Vector2)
-signal player_released(player: int, zone: int, position: Vector2)
-signal player_dragged(player: int, zone: int, position: Vector2, delta: Vector2)
+signal player_pressed(player: int, zone: int, position: Vector2, screen_position: Vector2)
+signal player_released(player: int, zone: int, position: Vector2, screen_position: Vector2)
+signal player_dragged(player: int, zone: int, position: Vector2, delta: Vector2, screen_position: Vector2)
 ```
 
-- Screen splits left = Player 1, right = Player 2. Zones subdivide further per-game via **data**, not per-game code.
-- Touch ownership is decided by which half the touch **began** in, and does not change even if the finger drags across the midline mid-touch.
+- Screen splits **top = Player 2, bottom = Player 1**, at `Field.split_y()` — the same value
+  MatchHost draws its seam at. Zones subdivide further per-game via **data**, not per-game code.
+- `position` arrives in whichever space the game declared via `MiniGame.input_space`; it must
+  match the space the game draws in. `screen_position` is always the raw viewport coordinate.
+- Touch ownership is decided by which half the touch **began** in, and does not change even if
+  the finger drags across the seam mid-touch.
 - Multi-touch is mandatory and is the #1 product risk — both players touching simultaneously must register independently. Verify on real budget Android hardware, not just the editor/simulator, before trusting any game built on top of it.
 - Keep the toggleable debug overlay (visualizes active touch points + assigned player) working at all times; it's how multi-touch regressions get caught.
 
@@ -119,6 +169,30 @@ Target 60fps, must remain playable at 30fps on a cheap 2020-era Android device. 
 5. AdMob + IAP integration, store assets, signed builds, submit.
 
 If day 3 slips, cut Connect Four before cutting the polish pass — a smaller set of finished-feeling games beats a larger set of janky ones.
+
+## Verification — run both of these before trusting anything
+
+```bash
+godot --headless --path . --import                       # zero parse/scene errors
+godot --headless --path . res://tools/GeomCheck.tscn      # ~4700 geometry assertions
+godot --headless --path . --export-debug "Web" build/web/index.html
+node tools/playtest.mjs                                   # real CDP touch events
+```
+
+`tools/geom_check.gd` asserts the invariants this project has broken before: the two halves
+tile the viewport exactly, SCREEN↔PLAYER round-trips, `InputManager`'s ownership agrees with
+`Field`'s geometry, player space is symmetric, `layout()` is idempotent, and zone rects stay
+inside their own half — at 720x1280, 720x1560 (20:9) and 800x1280. It runs in a second and
+catches most migration bugs without a browser. It must be run as a SCENE, not with `--script`:
+a custom `SceneTree` main loop never registers the autoloads.
+
+`tools/playtest.mjs` drives the Web build with genuine `Input.dispatchTouchEvent` calls and
+asserts on pixels. **A score changing is not proof that input worked** — unattended physics
+moves the score on its own, and a build with no controls at all once passed a "the score went
+up" check. So it measures the position of the thing input is supposed to move, and every drag
+test also asserts that the *other* player's piece did not move; that second assertion is what
+catches an inverted ownership axis, which otherwise looks completely healthy. It also asserts
+the canvas carries no CSS transform, which has broken all input here once already.
 
 ## Commands
 
@@ -186,7 +260,7 @@ Every status section above claimed real audio needed "an audio tool/library this
 
 The generator script is not checked in — the `.wav` files are the artifact. If the sounds ever need regenerating, the approach is just `wave` + `struct` + `math` from the stdlib.
 
-**Glyph coverage cleanup (same root cause as the emoji-tofu bug).** The art pass fixed emoji on game tiles but left the same bug in button labels — `▶ PLAY`, `⚙`, `←`, `✕`, `⏸`, `☰ MENU`, `🔄 REMATCH`, `★ REMOVE ADS`, `Ads Removed ✓` all drew a tofu box for the symbol because the default theme font has no glyph for any of them. All of these are now plain ASCII (`PLAY`, `SET`, `<`, `X`, `II`, `MENU`, `REMATCH`, `REMOVE ADS`, `ADS REMOVED`). **Rule for this project: no non-ASCII in any user-facing string until a font with real glyph coverage is bundled** — comments and docs are fine, `Label`/`Button` text is not.
+**Glyph coverage cleanup (same root cause as the emoji-tofu bug).** The art pass fixed emoji on game tiles but left the same bug in button labels — `▶ PLAY`, `⚙`, `←`, `✕`, `⏸`, `☰ MENU`, `🔄 REMATCH`, `★ REMOVE ADS`, `Ads Removed ✓` all drew a tofu box for the symbol because the default theme font has no glyph for any of them. All of these are now plain ASCII (`PLAY`, `SET`, `<`, `X`, `II`, `MENU`, `REMATCH`, `REMOVE ADS`, `ADS REMOVED`). **Rule for this project: no non-ASCII in any user-facing string until a font with real glyph coverage is bundled** — comments and docs are fine, `Label`/`Button` text is not. (Baloo 2 and Nunito are now bundled under `shared/art/fonts/` with their OFL licenses, but no project theme registers them yet, so the rule still stands until one does.)
 
 ## Mobile web layout + in-match exit
 
@@ -211,10 +285,6 @@ Everything Day 5 that's pure text/code is done:
 - **Real-hardware multi-touch verification** — unresolved since Day 1, and still the single highest-priority item before any of this ships, per PRD's own stated Day 1 exit criteria.
 
 In short: the app's game logic and shell are code-complete for all 6 launch games (Days 1–4), and the Day 5 paperwork that doesn't require a device or the Godot editor is done. What remains — SDK integration, IAP, real assets, signing, submission — needs a human with a Godot editor, an Android device, and store console access.
-
-## Automated GitHub Pages deployment
-
-GitHub Pages for this repo is already configured as "Deploy from a branch: `gh-pages`" (that's how the Web build referenced in "Engine verification" below first got hosted for on-device testing). `.github/workflows/deploy-pages.yml` automates keeping that branch current: it builds the same Web export described below in CI (fetches Godot + export templates, copies `export_presets.example.cfg` into place, imports, exports release) and pushes the result to `gh-pages` via `peaceiris/actions-gh-pages`. Runs on every push to `main`; can also be triggered manually (Actions tab → "Deploy Web build to GitHub Pages" → Run workflow) against any branch/ref to refresh the live preview before merging. No repo Settings change is needed — it reuses the existing branch-based Pages config rather than switching to the Actions-native deployment method.
 
 ## Engine verification (HTML5/Web export) — correction to earlier day logs
 
@@ -264,62 +334,117 @@ Also landed in this pass: real Air Hockey goal mouths (the whole end line used t
 
 **Verification lesson, restated because it keeps mattering:** check the thing input is supposed to move — paddle position, piece placement — never just the score. The playtest harness lives in `/tmp/pt` (not checked in); it drives `Input.dispatchTouchEvent` through CDP, including genuinely simultaneous two-finger input.
 
-## Shell "smooth, clean" visual pass
-
-The shell screens (Main Menu, Game Select, Rules Card, Results, the win banner, Settings) got a second, distinct visual language layered on top of the sticker style — soft pastel gradient backgrounds and borderless rounded cards/buttons with a gentle drop shadow, closer to a modern wellness-app onboarding flow than a game HUD. **This is additive, not a replacement**: in-game rendering (`Juice.gd`'s cartoon circles/rects, used by every game's pucks/paddles/tokens) and the match HUD (`UIUtil.make_button`/`make_round_button`/`make_score_pill`, used by `MatchHost`'s pause/exit/score chrome) are untouched and still use the thick-ink-outline sticker look on purpose — the two styles are meant to read as "calm shell, energetic match," not as an inconsistency to fix.
-
-- **`Palette.gd`** gained five `GRADIENT_*_TOP`/`_BOTTOM` pairs, one per shell screen (menu/select/rules/results/settings), each its own soft mood the same way each game already owns a full-screen ground colour. `PLAYER_1`/`PLAYER_2` and every other existing constant are unchanged — the fixed player color-coding rule is a gameplay/accessibility invariant, not a shell "look," and stayed out of scope for this pass.
-- **`UIUtil.gd`** gained `gradient_bg()` (a `GradientTexture2D`-backed drop-in replacement for `full_rect_bg()`), `soft_glow()` (a radial fade, used behind the Main Menu mascots), `soft_panel_style()` (borderless rounded `StyleBoxFlat` with a soft shadow, no hard ink outline), and `make_soft_button()`/`make_soft_round_button()` (the borderless equivalents of `make_button()`/`make_round_button()`). The original sticker-style helpers are untouched and still used verbatim by `MatchHost` and every game.
-- Applied `gradient_bg` + the soft button/panel helpers across `MainMenu.gd`, `GameSelect.gd`, `RulesCard.gd`, `Results.gd`, `WinBanner.gd`, and `Settings.gd`. `WinBanner`'s floating "PLAYER X WINS!" text now sits on a soft card instead of bare on the screen. The Main Menu's mascots get a soft brand-coloured (coral/teal) glow behind them, echoing a hero-character glow without adding a new art asset.
-- Verified end-to-end via a real Godot 4.3 Web export (fetched per the "Engine verification" section below) served locally and driven with Playwright/Chromium: Main Menu → Game Select → Rules Card all render and interact correctly with the new styling (screenshots taken, not just a headless import check).
-
-If a future pass wants the sticker style itself softened (i.e. changing how games/match-HUD render), that's a bigger, separate decision — it touches every game's `_draw()` code and the accessibility-driven color/shape pairing rule, not just shell chrome.
-
-## Party Mode — group-play games, deliberately separate from the 1v1 pipeline
-
-The 6 (→10) launch games are all built around exactly two players, split-screen, scored to a winner via the `MiniGame` contract. **Party Mode** is a second, additive category for a *group* (3+ people) sharing one phone passed around or set on the table — a movie-guessing game, a dice roller, a category prompt game, a spin-the-wheel picker. None of that fits `MiniGame`'s assumptions (binary `score_p1`/`score_p2`, a `winner: int`, screen-half touch ownership), so it is a fully parallel stack, not a bent version of the 1v1 one:
-
-- **`shared/PartyGame.gd`** — the party equivalent of `MiniGame`, deliberately smaller: `game_id`/`display_name`/`rules_text`, `theme_bg`/`theme_changed` (same full-screen-ground-per-game idea `MiniGame` uses), `setup(config)`/`layout()`/`start()`. **No** `match_ended`/winner/score — a party game is open-ended (reroll dice, reveal another movie, indefinitely); leaving is just tapping `PartyHost`'s always-visible back button, with no "exit this match?" confirm since nothing is "in progress" to lose.
-- **`autoload/PartyManager.gd`** — the party equivalent of `GameManager`'s registry, kept as its own autoload rather than bolted onto `GameManager` (which also owns 1v1 match-lifecycle/session-tally concerns with no party analogue). `PARTY_GAME_REGISTRY`/`PARTY_ROSTER`, `get_roster()`, `get_party_game_meta()`, `load_party_game()` — same shape as `GameManager`'s, on purpose, so the pattern is instantly familiar.
-- **`shared/PromptDeck.gd`** — a small `RefCounted` data helper (no autoload) any party game can instance to load a local JSON content file, expose its distinct field values (for populating filter dropdowns straight from real data), filter by tag, and draw a random entry while avoiding immediate repeats. Used by Movie Guess and Category Blitz; Dice Roller and Spin the Wheel are pure randomizers and need no content file at all.
-- **Navigation**: `MainMenu` gained a **PARTY MODE** button (violet, `Palette.PARTY_PRIMARY`, between PLAY and Remove Ads) → `shell/party_select/PartyGameSelect.gd/.tscn` (same tile-grid pattern as `GameSelect`, reusing `RulesCard` verbatim on first play) → `shell/party_host/PartyHost.gd/.tscn` (the `PartyGame` equivalent of `MatchHost`: no score bar, no midline divider, no countdown). The back button returns to `PartyGameSelect`, not `MainMenu` — the point of Party Mode is trying several tools in one sitting.
-- **No ads in Party Mode v1** — `AdManager`'s gating is entirely keyed off `GameManager.match_finished`/`games_played_count`, concepts Party Mode has none of, and there's no natural "match end" moment to hang an interstitial on without breaking the pass-the-phone flow. `PartyManager`/`PartyHost` never call `AdManager`.
-- `PartyHost._ready()` defensively resets `InputManager.configure_zones([])`/`set_shared_board_turn(0)` before loading its game — party games never call either, but this stops stale state leaking in either direction between a Party session and a 1v1 match played before or after it.
-
-**The four games** (`games/party/<id>/`, mirroring the `games/<id>/` layout the 1v1 games use, just nested one level deeper so the file tree itself documents which games are 1v1 vs. group):
-
-- **Movie Guess** (`movie_guess`) — two `OptionButton`s (era, language) populated live from `PromptDeck.distinct_values()` against `shared/party_content/movies.json` (215 hand-curated entries: `{title, year, decade, language, difficulty}`); REVEAL/NEXT MOVIE shows a title, group guesses out loud. No scoring — resolution is verbal.
-- **Dice Roller** (`dice_roller`) — 1–6 dice (stepper, persisted), hand-drawn faces (`Juice.sticker_rect` + pip circles, no sprites), each die tumbles through random values for ~0.4–0.6s (staggered per die) then snaps to its true value with a `Juice.decay_squash` landing bounce and one haptic pulse once every die has settled. Shows a running `TOTAL`.
-- **Category Blitz** (`category_blitz`) — a category prompt from `shared/party_content/categories.json` (98 entries, 4 `pack` tags) plus a 20s countdown, reusing `shared/components/MatchTimer.gd` completely unmodified (it was already fully generic and previously unused by any shipped game). The countdown draws as a shrinking `draw_arc` that also colour-ramps toward `Palette.PLAYER_1` as time runs low — shape and colour change together, per the project's accessibility pairing rule.
-- **Spin the Wheel** (`spin_the_wheel`) — set a 2–8 segment count, tap SPIN, a hand-drawn wedge wheel (`draw_colored_polygon` fans, cycling existing palette colors) spins through a random number of full turns with a cubic ease-out deceleration and lands on one segment, read back via simple angle math against a fixed top pointer. No content file — the purest randomizer of the four, and the cheapest to build.
-
-**Palette additions**: `PARTY_PRIMARY` (violet accent) + `GRADIENT_PARTY_TOP`/`_BOTTOM` (for `PartyGameSelect`, following the existing 5-gradient-pair shell pattern) + one flat `BG_MOVIE_GUESS`/`BG_DICE_ROLLER`/`BG_CATEGORY_BLITZ`/`BG_SPIN_WHEEL` ground colour per game, same "each game owns a full-screen colour" convention the 1v1 games use — just softer, since these are mostly `Control`-UI tools rather than a rendered playfield.
-
-**Persistence** (`SaveManager.gd`): `party_rules_seen` (parallel to `rules_seen`, kept separate so a party `game_id` can never collide with a 1v1 one), `party_last_filters` (Movie Guess's/Category Blitz's last-picked filters, keyed by game_id), `party_dice_count`, `party_wheel_segments` — same flat `ConfigFile` pattern as every other field, no new persistence mechanism.
-
-**Content authoring note**: the app is offline-only (no network calls except the ad SDK), so Movie Guess can't query a live movie database — `movies.json` is a hand-curated, generated-and-reviewed local dataset (215 entries across 1970s–2020s × English/Hindi/Korean, every decade×language bucket the filter UI can produce given a floor of a few entries so no combination dead-ends). It's real content sized for genuine replay value, not a placeholder, but it is not an exhaustive database — expanding it further is a content pass, not a code change (`PromptDeck` reads whatever's in the file).
-
-**Not touched, confirmed reusable as-is**: `RulesCard.gd`, `MatchTimer.gd`, `Juice.gd`, `Field.gd`, `InputManager.gd`, `GameManager.gd`, `AdManager.gd`.
-
-## Portrait support for shell screens
-
-The rotate-prompt gate described in "Mobile web layout + in-match exit" above used to fire unconditionally whenever the browser was in portrait — `@media (orientation: portrait) { #rotate-prompt { display: flex; } }`, with no awareness of which screen was actually showing. That blocked the *entire app* behind "turn your phone sideways" the instant it loaded in portrait, even though only the split-screen games (MatchHost/PartyHost) genuinely need landscape width — Main Menu, Game Select, Party Game Select, Rules Card, Settings, and Results all lay out fine in portrait as-is, since `window/stretch/aspect="expand"` never shrinks the design canvas below its 1280-wide base in either orientation (see "Playtest audit pass" above) — it only ever *adds* space on whichever axis has slack, so a portrait window just gets a much taller canvas at the same 1280-wide layout, not a squeezed one.
-
-Fix: the gate is now scoped to actual gameplay only.
-
-- `export_presets.example.cfg`'s CSS changed from `@media (orientation: portrait) { #rotate-prompt { ... } }` to `@media (orientation: portrait) { body.match-active #rotate-prompt { ... } }` — the prompt now also requires a `match-active` class on `<body>`.
-- `UIUtil.set_web_match_active(active: bool)` (new) toggles that class via `JavaScriptBridge.eval()`, since the static HTML/CSS shell has no visibility into which Godot scene is currently active otherwise. It's a no-op on every platform except Web (`OS.get_name() != "Web"` guard) — native builds don't have this HTML shell at all.
-- `MatchHost.gd` and `PartyHost.gd` call `UIUtil.set_web_match_active(true)` at the top of `_ready()` and `UIUtil.set_web_match_active(false)` in a new `_exit_tree()` — `_exit_tree()` rather than each individual navigation call site, so it fires no matter which of the several ways a player can leave a match (rematch, exit-to-menu, back button) actually gets used.
-- As before, `export_presets.cfg` is gitignored and `export_presets.example.cfg` is the tracked source of truth — copy it over on a fresh clone before exporting, and mirror any further Web-preset change back into it.
-
-**Native (Android/iOS) is unchanged and untouched by this**: `project.godot`'s `window/handheld/orientation="landscape"` is a single project-wide OS-level lock with no per-scene equivalent — switching it live between menu and match on a real device would need native platform code (Android's `screenOrientation` at runtime, etc.), which is out of reach from this environment for the same reason the rest of native export is (see Day 5 status: no SDK/NDK, no device, no export ever attempted). This section only fixes the web build's browser-side prompt, which was the literal "forced to stay landscape to even load the menu" complaint — native's behavior (whole app locked to landscape, no in-between prompt to begin with) hasn't changed and isn't claimed to have.
-
-**Correction — "not blocked" turned out not to mean "looks right".** A real phone screenshot of Game Select in portrait (hosted on GitHub Pages) showed the fix above technically working — no rotate-prompt — but the tile grid sat squeezed into the top third of the screen with a large empty void below, because every shell screen positions its content via hardcoded absolute Y values written against the 720-tall landscape baseline, and those never moved just because `Field.height()` grew past 720 in portrait. "Doesn't block portrait" and "looks acceptable in portrait" are different bars, and only the first one had actually been verified (in an automated Playwright pass, not on a real device) before this correction.
-
-Fix: `Field.shell_top_offset()` (new) returns `max(0, (height() - NOMINAL_HEIGHT) * 0.5)` — zero in landscape (no visual change there at all), and in portrait, exactly the amount needed to vertically centre a 720-tall content block in the real visible height instead of pinning it to the top. Every shell screen's primary content position now adds this: `MainMenu.gd`, `GameSelect.gd`, `PartyGameSelect.gd`, `Settings.gd`, `Results.gd`. The three modal popups that already used `Field.NOMINAL_HEIGHT` for centering (`RulesCard.gd`, `MovieGuessSetupPrompt.gd`, `DiceCountPrompt.gd`) now add `Field.shell_top_offset()` too, so a modal stays aligned over the (now-shifted) content it's covering instead of drifting to the middle of the tall empty portrait canvas. **Corner chrome is deliberately excluded** — a screen's own back/settings button and a modal's own close button stay pinned to the literal screen corner (`Vector2(24, 24)` etc.), matching how corner navigation chrome behaves in effectively every mobile app regardless of how much content is below it; only the primary content block centers.
-
-Verified on a simulated real portrait viewport (390×844, genuine CDP touch events) end to end: Main Menu, Game Select, and RulesCard all render vertically centered with even space above and below; re-ran the full existing landscape regression suite (tile taps on both grids, Dice Roller prompt, Movie Guess chip fix) against the same build and confirmed byte-for-byte identical behavior, since `shell_top_offset()` is exactly 0 there.
-
 ## Reference
 
 Full product spec, personas, wireframes, store listing copy, and success metrics: `FACE_OFF_PRD.md`.
+
+## Portrait rebuild status (current)
+
+The app is portrait, top/bottom split, 12 games, full shell redesign. What landed:
+
+- **`Field.gd` rewritten** around SCREEN/PLAYER spaces and `player_xform()`. `mid_x()`,
+  `top()`, `bottom()`, `play_height()` and `SCORE_BAR_HEIGHT` were **deleted rather than
+  aliased**, so every stale call site had to be visited deliberately.
+- **All six original games converted.** Air Hockey, Ping Pong and Sumo Blob transposed their
+  axes as FIELD games; Tic-Tac-Toe and Connect Four kept their communal boards and gained
+  mirrored turn banners; Tap Race became the first SPLIT game.
+- **Six sports games added** — Basketball, Sprint, Diving, Horse Jump, Swimming, Archery — all
+  SPLIT, all on `SplitGame`. Sprint deliberately runs on *momentum* (taps add velocity, which
+  decays) rather than Tap Race's raw accumulation, and Swimming on a fixed *tempo*, so the
+  three tap-driven games reward different things.
+- **Shell redesigned**: Game Select scrolls vertically in two columns under CLASSIC/SPORTS
+  headers; pause gained Restart Match and How To Play; Settings is grouped into
+  GENERAL/MORE/ACCOUNT; pause and exit-confirm now share one builder instead of being two
+  near-identical copies.
+- **Verified**: 4740 geometry assertions across three aspect ratios, and 10/10 browser checks
+  including a genuinely simultaneous two-finger drag where each paddle landed exactly on its
+  own target and the opponent's moved 0.0px. **That closes the Day 1 exit criterion**, which
+  had been open since the project started — in the Web build.
+
+Bugs found and fixed by actually looking at the rendered screen (none were visible in the code):
+
+- Sumo Blob's platform radius was 83% of a 720-wide screen; a blob could be knocked "out"
+  while visually still on the clay.
+- Game Select's `?` buttons hung outside their cards and overlapped the neighbouring one.
+  `PRESET_TOP_RIGHT` anchors a control's *left* edge to the parent's right edge; pure
+  anchors-plus-offsets is the fix, never a preset plus a manual position.
+- The pause/exit cluster sat on top of the playfield for every centre-of-screen game.
+- Connect Four's queued-token indicators were drawn past both screen edges.
+- The playtest probe itself was wrong before the game was: a colour centroid included each
+  player's goal mouth and score pill, which are the same colour as their paddle. It now picks
+  the largest roughly-*circular* blob, which is what separates a paddle from a wide goal
+  mouth or a capsule-shaped pill.
+
+## Art pack (installed)
+
+The 68 PNGs described by `shared/art/manifest.json` are in `shared/art/`. `ASSET_PROMPTS.md`
+remains the source of truth for regenerating any of them — keep the two files in sync.
+
+- **`shared/Art.gd`** is the only way art is loaded: cached, and **guarded** so a missing file
+  returns `null` and the caller falls back to the procedural `_draw()` look. That fallback is
+  not dead code — it is what lets a partial or reverted pack degrade instead of crash, and it
+  is why deleting a PNG is a data change rather than a code change.
+- **`Juice.sprite/cover/tile_h`** all take an explicit `base` transform and restore it.
+  `draw_set_transform*` **replaces** the canvas transform rather than composing with it, so a
+  helper that set it directly would clobber the player transform a SPLIT game draws under and
+  put the sprite on the wrong half, right way up. `SplitGame` wraps them so subclasses never
+  have to remember.
+- **`project.godot` enables mipmaps project-wide.** The pack ships at 2–3× on-screen size, so
+  everything is minified and thin outlines shimmer without them. It is a project-wide default
+  because `.import` files are gitignored and a per-file setting would vanish on a fresh clone.
+- **The games own their playfield geometry; the art is scenery.** Which band of a cropped
+  background lands under a given local y depends on the viewport, so anything the rules depend
+  on (Sprint's lane, Diving's water line, Basketball's rim plane) is still drawn or positioned
+  by code. Trusting the crop put Sprint's runner on the infield grass.
+
+Two Godot defaults bit hard here, both invisible in the code and both found by looking at the
+rendered screen:
+
+- **`TextureRect` defaults to `EXPAND_KEEP_SIZE`**, which reports the SOURCE texture's size as
+  the control's *minimum*. `custom_minimum_size` is a floor, never a cap — so 600×450
+  thumbnails burst out of their cards over the controls beneath, and 256px icons laid
+  themselves out at 256px inside 52px discs with their strokes entirely off the button, which
+  rendered every icon button as an empty circle. **Always set `EXPAND_IGNORE_SIZE`.**
+- **`Control` defaults to `MOUSE_FILTER_STOP`**, and that is not only a MatchHost problem: on
+  Game Select the card, the `GridContainer` and the `VBoxContainer` each swallowed the drag
+  before the `ScrollContainer` saw it, so the list could only be scrolled from the thin gaps
+  between cards. Every Control between a ScrollContainer and its content needs `IGNORE`.
+
+## Party Mode (merged onto portrait)
+
+`main` had forked: a landscape line carrying **Party Mode** (Movie Guess, Dice Roller,
+Category Blitz, Spin the Wheel) and a portrait line carrying the 12-game rebuild. They are
+now one tree — portrait, with Party Mode ported onto it.
+
+- **Party Mode is a second roster, not a game category.** `PartyManager` is deliberately
+  separate from `GameManager`: party games have no score and no winner, so they cannot
+  satisfy the `MiniGame` contract. They extend **`PartyGame`** and run under `PartyHost`.
+  The entry point is its own button on the Main Menu, not a section of Game Select.
+- **`PartyGame.content_top(height)`** is the vertical anchor for a party game's content
+  column. Party games draw one upright block in SCREEN space — no split, no rotation,
+  because everyone is looking at the phone the same way up — and anchoring that block to
+  `Field.top()` was right on a 720-tall landscape screen and pins it to the top of a
+  portrait one. Pass your own block height; do not re-derive the anchor.
+- `Field.shell_top_offset()` is the Control-side equivalent for **shell** screens, and is
+  for the primary content block only — never for corner chrome, and never for gameplay,
+  which gets its geometry from `play_rect()` and the player rects.
+
+**`tools/ShellShots.tscn` renders every shell screen, every party game and both pre-launch
+prompts to `/tmp/shellshots`.** It is the sibling of `tools/Shots.tscn` (which covers the
+1v1 games) and it exists because nothing rendered these before. After the portrait
+migration Party Mode was still laying itself out for landscape — a 1128px-wide tile grid on
+a 720px phone, an 880px-wide setup card, every party game pinned to the top with the bottom
+half empty — and **all of it parsed, and all of it passed both other harnesses**, because
+neither of them looks at a pixel. Run it before trusting any shell change.
+
+The same pass caught the menu mascots drawn on top of the title: `UIUtil.idle_float()`
+captures its base `y` **once**, and it was being started in `_ready()`, before the first
+`_relayout()` positioned the mascots. It now returns its `Tween` so a caller that
+repositions the node can kill and restart it, which is what `MainMenu._relayout()` does.
+
+**Still outstanding:**
+
+- **No project theme** registers the bundled fonts, so the ASCII-only rule still applies.
+- **Native Android/iOS** export, AdMob SDK binding, platform IAP, store assets and signing —
+  all unchanged from the Day 5 notes above. Multi-touch is confirmed in the Web build only;
+  native input uses the same `InputManager` but a different platform backend.

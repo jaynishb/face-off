@@ -1,0 +1,71 @@
+{
+  "$comment": "Machine-readable index of every generated art asset. Prompts live in ASSET_PROMPTS.md, keyed by the same ids -- keep the two files in sync. 'players': 2 means the asset has a P1 and a P2 variant and its path contains {player}, which resolves to p1/p2. 'opaque': true means no alpha channel is expected (scene backgrounds). Sizes are the generation size, not the on-screen size.",
+  "version": 1,
+  "root": "res://shared/art/",
+  "assets": [
+    { "id": "bg/basketball",       "path": "games/basketball/bg.png",          "size": [1440, 1280], "players": 1, "opaque": true,  "group": "sports" },
+    { "id": "char/basketball",     "path": "games/basketball/char_{player}.png","size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "prop/basketball_hoop","path": "games/basketball/hoop.png",        "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+    { "id": "prop/basketball_ball","path": "games/basketball/ball.png",        "size": [256, 256],   "players": 1, "opaque": false, "group": "sports" },
+
+    { "id": "bg/sprint",           "path": "games/sprint/bg.png",              "size": [1440, 1280], "players": 1, "opaque": true,  "group": "sports" },
+    { "id": "char/sprint",         "path": "games/sprint/char_{player}.png",   "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "char/sprint_lean",    "path": "games/sprint/lean_{player}.png",   "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "prop/sprint_finish",  "path": "games/sprint/finish.png",          "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+
+    { "id": "bg/diving",           "path": "games/diving/bg.png",              "size": [1440, 1280], "players": 1, "opaque": true,  "group": "sports" },
+    { "id": "char/diving_stand",   "path": "games/diving/stand_{player}.png",  "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "char/diving_tuck",    "path": "games/diving/tuck_{player}.png",   "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "char/diving_entry",   "path": "games/diving/entry_{player}.png",  "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "prop/diving_board",   "path": "games/diving/board.png",           "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+    { "id": "prop/diving_splash",  "path": "games/diving/splash.png",          "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+
+    { "id": "bg/horse_jump",       "path": "games/horse_jump/bg.png",          "size": [1440, 1280], "players": 1, "opaque": true,  "group": "sports" },
+    { "id": "char/horse_jump",     "path": "games/horse_jump/jump_{player}.png",  "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "char/horse_gallop",   "path": "games/horse_jump/gallop_{player}.png", "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "prop/horse_hurdle",   "path": "games/horse_jump/hurdle.png",      "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+
+    { "id": "bg/swimming",         "path": "games/swimming/bg.png",            "size": [1440, 1280], "players": 1, "opaque": true,  "group": "sports" },
+    { "id": "char/swimming",       "path": "games/swimming/char_{player}.png", "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "char/swimming_pull",  "path": "games/swimming/pull_{player}.png", "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "prop/swimming_rope",  "path": "games/swimming/rope.png",          "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+    { "id": "prop/swimming_wall",  "path": "games/swimming/wall.png",          "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+
+    { "id": "bg/archery",          "path": "games/archery/bg.png",             "size": [1440, 1280], "players": 1, "opaque": true,  "group": "sports" },
+    { "id": "char/archery",        "path": "games/archery/char_{player}.png",  "size": [1024, 1024], "players": 2, "opaque": false, "group": "sports" },
+    { "id": "prop/archery_bow",    "path": "games/archery/bow.png",            "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+    { "id": "prop/archery_arrow",  "path": "games/archery/arrow.png",          "size": [256, 256],   "players": 1, "opaque": false, "group": "sports" },
+    { "id": "prop/archery_target", "path": "games/archery/target.png",         "size": [512, 512],   "players": 1, "opaque": false, "group": "sports" },
+
+    { "id": "thumb/air_hockey",    "path": "thumbs/air_hockey.png",   "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/ping_pong",     "path": "thumbs/ping_pong.png",    "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/tic_tac_toe",   "path": "thumbs/tic_tac_toe.png",  "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/tap_race",      "path": "thumbs/tap_race.png",     "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/connect_four",  "path": "thumbs/connect_four.png", "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/sumo_blob",     "path": "thumbs/sumo_blob.png",    "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/basketball",    "path": "thumbs/basketball.png",   "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/sprint",        "path": "thumbs/sprint.png",       "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/diving",        "path": "thumbs/diving.png",       "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/horse_jump",    "path": "thumbs/horse_jump.png",   "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/swimming",      "path": "thumbs/swimming.png",     "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+    { "id": "thumb/archery",       "path": "thumbs/archery.png",      "size": [600, 450], "players": 1, "opaque": false, "group": "thumb" },
+
+    { "id": "shell/hero",       "path": "shell/hero.png",           "size": [1200, 900], "players": 1, "opaque": false, "group": "shell" },
+    { "id": "shell/mascot",     "path": "shell/mascot_{player}.png","size": [800, 900],  "players": 2, "opaque": false, "group": "shell" },
+    { "id": "shell/laurel",     "path": "shell/laurel.png",         "size": [800, 400],  "players": 1, "opaque": false, "group": "shell" },
+    { "id": "shell/card_frame", "path": "shell/card_frame.png",     "size": [600, 450],  "players": 1, "opaque": false, "group": "shell" },
+
+    { "id": "icon/gear",      "path": "icons/gear.png",      "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/back",      "path": "icons/back.png",      "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/pause",     "path": "icons/pause.png",     "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/close",     "path": "icons/close.png",     "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/restart",   "path": "icons/restart.png",   "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/home",      "path": "icons/home.png",      "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/question",  "path": "icons/question.png",  "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/star",      "path": "icons/star.png",      "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/sound_on",  "path": "icons/sound_on.png",  "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/sound_off", "path": "icons/sound_off.png", "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/music",     "path": "icons/music.png",     "size": [256, 256], "players": 1, "opaque": false, "group": "icon" },
+    { "id": "icon/trophy",    "path": "icons/trophy.png",    "size": [256, 256], "players": 1, "opaque": false, "group": "icon" }
+  ]
+}

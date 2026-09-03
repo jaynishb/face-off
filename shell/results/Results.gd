@@ -1,52 +1,62 @@
 extends Control
 ## Results — shown after every match (post-interstitial, if one fired).
-## REMATCH is the single most important conversion point in the app: it must
-## be the biggest, brightest button on the screen (PRD 7.5).
+## REMATCH is the single most important conversion point in the app: it must be
+## the biggest, brightest button on the screen (PRD 7.5).
+##
+## Both players just finished a match on a phone lying between them, and either
+## one might reach for REMATCH — so the whole panel is drawn once per half, with
+## Player 2's copy rotated by PI. Both copies drive the same handlers.
 
 func _ready() -> void:
-	UIUtil.gradient_bg(self, Palette.GRADIENT_RESULTS_TOP, Palette.GRADIENT_RESULTS_BOTTOM)
+	UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 	AudioManager.play_menu_music()
+	UIUtil.mirror_for_players(self, _build_panel)
 
-	# Vertically centers the whole content block in portrait instead of
-	# leaving it pinned to the top with empty space below -- see
-	# Field.shell_top_offset(). 0 in landscape, so no change there.
-	var y := Field.shell_top_offset()
+## Built in PLAYER space: (0,0) is this player's own top-left, extending to
+## Field.half_size().
+func _build_panel(_player: int) -> Control:
+	var half := Field.half_size()
+	var root := Control.new()
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.size = half
 
 	var winner: int = GameManager.last_winner
 	var title_text := "DRAW!" if winner == 0 else "PLAYER %d WINS!" % winner
-	var title_color := Palette.ACCENT if winner == 0 else Palette.for_player(winner)
+	var title_color: Color = Palette.ACCENT if winner == 0 else Palette.for_player(winner)
 
-	var title := UIUtil.make_label(title_text, 56, title_color)
-	title.position = Vector2(0, 100 + y)
-	title.size = Vector2(Field.width(), 80)
-	add_child(title)
+	var title := UIUtil.make_label(title_text, 44, title_color)
+	title.position = Vector2(0, half.y * 0.18)
+	title.size = Vector2(half.x, 70)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(title)
 
 	var tally := GameManager.get_session_tally(GameManager.current_game_id)
-	var tally_card := Panel.new()
-	tally_card.add_theme_stylebox_override("panel", UIUtil.soft_panel_style(Palette.SURFACE, 24.0))
-	tally_card.custom_minimum_size = Vector2(360, 56)
-	tally_card.position = Vector2(Field.mid_x() - 180, 210 + y)
-	add_child(tally_card)
-
 	var tally_label := UIUtil.make_label(
-		"Today:  P1 %d — %d P2" % [tally.get("p1_wins", 0), tally.get("p2_wins", 0)], 26
+		"Today:  P1 %d - %d P2" % [tally.get("p1_wins", 0), tally.get("p2_wins", 0)], 24
 	)
-	tally_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	tally_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	tally_card.add_child(tally_label)
+	tally_label.position = Vector2(0, half.y * 0.18 + 74)
+	tally_label.size = Vector2(half.x, 40)
+	tally_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(tally_label)
 
-	var rematch_btn := UIUtil.make_soft_button("REMATCH", 40, Palette.SUCCESS)
-	rematch_btn.custom_minimum_size = Vector2(440, 140)
-	rematch_btn.position = Vector2(Field.mid_x() - 380, 420 + y)
+	var rematch_size := Vector2(minf(half.x - 80, 420), 116)
+	var rematch_btn := UIUtil.make_button("REMATCH", 36, Palette.SUCCESS)
+	rematch_btn.custom_minimum_size = rematch_size
+	rematch_btn.size = rematch_size
+	rematch_btn.position = Vector2((half.x - rematch_size.x) * 0.5, half.y * 0.44)
 	rematch_btn.pressed.connect(_on_rematch_pressed)
-	add_child(rematch_btn)
+	root.add_child(rematch_btn)
 
-	var menu_btn := UIUtil.make_soft_button("MENU", 32, Palette.SURFACE)
-	menu_btn.custom_minimum_size = Vector2(280, 100)
-	menu_btn.position = Vector2(Field.mid_x() + 100, 440 + y)
-	menu_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
-	add_child(menu_btn)
+	var menu_size := Vector2(minf(half.x - 220, 260), 74)
+	var menu_btn := UIUtil.make_button("MENU", 26, Palette.SURFACE)
+	menu_btn.custom_minimum_size = menu_size
+	menu_btn.size = menu_size
+	menu_btn.position = Vector2((half.x - menu_size.x) * 0.5, half.y * 0.44 + rematch_size.y + 22)
+	menu_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://shell/main_menu/MainMenu.tscn"))
+	root.add_child(menu_btn)
+
+	return root
 
 func _on_rematch_pressed() -> void:
 	GameManager.pending_game_id = GameManager.current_game_id
-	UIUtil.fade_to_scene(get_tree(), "res://shell/match_host/MatchHost.tscn")
+	get_tree().change_scene_to_file("res://shell/match_host/MatchHost.tscn")

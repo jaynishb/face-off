@@ -15,7 +15,6 @@ func _ready() -> void:
 	# swallows every tap before InputManager ever sees it. IGNORE lets touches
 	# fall through; the back button still gets its own clicks independently.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UIUtil.set_web_match_active(true) # gates the web build's rotate-prompt to matches only
 	_bg = UIUtil.full_rect_bg(self, Palette.BACKGROUND)
 	AudioManager.stop_music() # no music during play -- see CLAUDE.md
 
@@ -47,11 +46,6 @@ func _ready() -> void:
 	_relayout()
 
 	_game.start()
-
-## Leaving PartyHost by any route ends the Node's lifetime, so this always
-## fires -- unlike waiting on a specific navigation call site.
-func _exit_tree() -> void:
-	UIUtil.set_web_match_active(false)
 
 func _relayout() -> void:
 	_back_btn.position = Vector2(24, 24)

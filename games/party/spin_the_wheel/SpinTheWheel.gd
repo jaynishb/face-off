@@ -24,6 +24,8 @@ var _plus_btn: Button
 var _spin_btn: Button
 var _result_label: Label
 
+var _content_top := 0.0
+
 func _init() -> void:
 	game_id = "spin_the_wheel"
 	display_name = "Spin the Wheel"
@@ -64,8 +66,11 @@ var _stepper_label_ref: Label
 func layout() -> void:
 	if not _spin_btn:
 		return
-	var mid := Field.mid_x()
-	var top := Field.top() + 20.0
+	var mid := Field.center().x
+	# Centred in the play area rather than pinned to its top -- see
+	# PartyGame.content_top(). The height is this game's own content block.
+	_content_top = content_top(620.0)
+	var top := _content_top
 
 	_stepper_label_ref.position = Vector2(mid - 90, top)
 	_minus_btn.position = Vector2(mid - 100, top + 26)

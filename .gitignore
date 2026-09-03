@@ -10,3 +10,7 @@ build/
 # OS / editor cruft
 .DS_Store
 *.swp
+
+# Playtest harness deps (installed ad hoc; see tools/playtest.mjs)
+node_modules/
+package-lock.json

@@ -5,11 +5,16 @@ extends MiniGame
 
 const COLS := 7
 const ROWS := 6
-const CELL := 78.0
 const DIRECTIONS := [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(1, -1)]
 
 ## Centred on the real visible rect rather than a hardcoded design box, so the
 ## board sits in the middle of the actual screen -- see Field.gd.
+##
+## cell is derived, not fixed. 7x78 fits inside a 720-wide portrait screen, so a
+## fixed value would not crash or obviously misdraw -- it would just sit cramped
+## and drift on a 20:9 phone, which is exactly the kind of wrongness that
+## survives review and ships.
+var cell := 78.0
 var origin := Vector2.ZERO
 
 ## board[col] is a bottom-to-top stack of player ints for that column.
@@ -34,19 +39,22 @@ func _init() -> void:
 	rules_text = "Tap a column to drop your piece.\nFour in a row — any direction — wins."
 	match_duration = 0.0
 	theme_bg = Palette.turn_tint(current_turn)
-	shared_board = true
+	view_mode = ViewMode.SHARED
+	input_space = InputManager.Space.SCREEN
 
 ## Board geometry is derived from the live viewport every time it changes --
 ## a resize mid-match must move the board, not leave it where the first frame
 ## happened to put it (see MiniGame.layout).
 func layout() -> void:
-	origin = Field.center() - Vector2(COLS * CELL * 0.5, ROWS * CELL * 0.5)
+	# Leave headroom above and below for the mirrored turn banners.
+	cell = minf((Field.right() - Field.left()) / (COLS + 0.6), Field.play_height() * 0.62 / ROWS)
+	origin = Field.center() - Vector2(COLS * cell * 0.5, ROWS * cell * 0.5)
 	# In-flight tokens target an absolute y, so retarget them onto the new
 	# board position rather than letting them fall to a stale row.
 	for key in _falling.keys():
 		var f: Dictionary = _falling[key]
 		var landed_row: int = int(key.split("_")[1])
-		f.target = origin.y + landed_row * CELL + CELL * 0.5
+		f.target = origin.y + landed_row * cell + cell * 0.5
 		_falling[key] = f
 	queue_redraw()
 
@@ -90,13 +98,13 @@ func _process(delta: float) -> void:
 func start_match() -> void:
 	_match_active = true
 
-func _on_touch(player: int, _zone: int, position: Vector2) -> void:
+func _on_touch(player: int, _zone: int, position: Vector2, _screen: Vector2) -> void:
 	if not _match_active or _turn_locked:
 		return
 	if player != current_turn:
 		return
 
-	var col := int((position.x - origin.x) / CELL)
+	var col := int((position.x - origin.x) / cell)
 	if col < 0 or col >= COLS:
 		return
 	if board[col].size() >= ROWS:
@@ -106,9 +114,9 @@ func _on_touch(player: int, _zone: int, position: Vector2) -> void:
 	var landed_row: int = ROWS - board[col].size()
 	var key := "%d_%d" % [col, landed_row]
 	_falling[key] = {
-		"y": origin.y - CELL * 0.5,
+		"y": origin.y - cell * 0.5,
 		"vel": 0.0,
-		"target": origin.y + landed_row * CELL + CELL * 0.5,
+		"target": origin.y + landed_row * cell + cell * 0.5,
 		"player": player,
 		"col": col,
 	}
@@ -173,14 +181,13 @@ func _reset_board() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var board_rect := Rect2(origin, Vector2(COLS * CELL, ROWS * CELL))
+	var board_rect := Rect2(origin, Vector2(COLS * cell, ROWS * cell))
 
-	# The next token waits at the board's edge, so each player can see what
-	# they're about to play without reading any text. Drawn before the slab so
-	# it tucks behind it, as if queued in the feed slot.
-	if not _turn_locked:
-		var waiting := Vector2(origin.x - 30.0, origin.y + ROWS * CELL * 0.5)
-		Juice.cartoon_circle(self, waiting, CELL * 0.35, Palette.for_player(current_turn))
+	# The queued-token indicator that used to sit at each flank is gone: in
+	# portrait the board spans nearly the full width, so both copies were drawn
+	# past the screen edge and rendered as clipped half-circles. The mirrored
+	# turn banners below already say whose turn it is, and they do it the
+	# accessible way -- colour AND shape AND text.
 
 	# A charcoal slab with holes punched through it -- the shape Connect Four
 	# is actually recognised by. The board had no fill at all before, so cream
@@ -189,15 +196,15 @@ func _draw() -> void:
 
 	for row in range(ROWS):
 		for col in range(COLS):
-			var center: Vector2 = origin + Vector2(col * CELL + CELL * 0.5, row * CELL + CELL * 0.5)
+			var center: Vector2 = origin + Vector2(col * cell + cell * 0.5, row * cell + cell * 0.5)
 			var v := _get_cell(row, col)
 			if v == 0 or _falling.has("%d_%d" % [col, row]):
 				# Empty socket: a darker recess with a hard rim, so the board
 				# reads as drilled rather than printed.
-				draw_circle(center, CELL * 0.40, Palette.OUTLINE)
-				draw_circle(center, CELL * 0.35, Palette.BOARD_HOLE)
+				draw_circle(center, cell * 0.40, Palette.OUTLINE)
+				draw_circle(center, cell * 0.35, Palette.BOARD_HOLE)
 			else:
-				Juice.cartoon_circle(self, center, CELL * 0.35, Palette.for_player(v), Vector2.ONE, false)
+				Juice.cartoon_circle(self, center, cell * 0.35, Palette.for_player(v), Vector2.ONE, false)
 
 	for key in _falling.keys():
 		var f: Dictionary = _falling[key]
@@ -205,7 +212,14 @@ func _draw() -> void:
 		# f.target, which is absolute), so only x is offset by origin. Adding
 		# origin.y here as well double-counted it and drew a token drifting
 		# below the board -- visible as a stray disc off the bottom edge.
-		var center := Vector2(origin.x + f.col * CELL + CELL * 0.5, f.y)
-		Juice.cartoon_circle(self, center, CELL * 0.35, Palette.for_player(f.player), Vector2.ONE, false)
+		var center := Vector2(origin.x + f.col * cell + cell * 0.5, f.y)
+		Juice.cartoon_circle(self, center, cell * 0.35, Palette.for_player(f.player), Vector2.ONE, false)
 
-	TurnBanner.draw_turn(self, Vector2(origin.x + COLS * CELL * 0.5, origin.y - 58.0), current_turn)
+	# One communal board, two players facing opposite ways: draw the turn banner
+	# twice -- upright below the board for Player 1, rotated PI above it for
+	# Player 2 -- so neither has to read it upside down.
+	var cx := origin.x + COLS * cell * 0.5
+	TurnBanner.draw_turn(self, Vector2(cx, origin.y + ROWS * cell + 50.0), current_turn)
+	draw_set_transform(Vector2(cx, origin.y - 50.0), PI, Vector2.ONE)
+	TurnBanner.draw_turn(self, Vector2.ZERO, current_turn)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

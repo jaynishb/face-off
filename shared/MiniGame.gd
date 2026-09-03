@@ -17,10 +17,35 @@ var theme_bg: Color = Palette.BACKGROUND
 ## True when the ground is dark enough that the score bar and its buttons need
 ## light-on-dark treatment.
 var theme_dark: bool = false
+## How this game occupies the portrait screen. The shell frames a game by its
+## view_mode and never by its game_id.
+##
+##   SPLIT  — each player has their own private, mirrored half. The game authors
+##            one half in Field's PLAYER space and draws it twice under
+##            Field.player_xform(), so Player 2's side is rotated PI and reads
+##            right-way-up to them. Symmetry is structural, not hand-mirrored.
+##   SHARED — one communal board straddling the seam, drawn upright in SCREEN
+##            space. No rotation is possible or meaningful. Turn ownership comes
+##            from InputManager.set_shared_board_turn(). The shell skips the seam
+##            divider for these -- drawing a split down a shared board is a lie
+##            about how the game is played -- and moves the score pills out to
+##            each player's outer edge so the board can own the middle.
+##   FIELD  — one continuous field both players act on, with a single shared
+##            object (a puck, a ball, a platform) that both watch. Drawn upright
+##            in SCREEN space, geometry symmetric about the seam so neither
+##            player is upside-down. Rotating half of a shared rink would tear it
+##            in two, so FIELD games never rotate.
+enum ViewMode { SPLIT, SHARED, FIELD }
+var view_mode: int = ViewMode.FIELD
+
+## The coordinate space this game wants its touches in; MatchHost forwards it to
+## InputManager before setup(). SPLIT games want PLAYER; everything else wants
+## SCREEN. Must agree with what the game draws in, or input and art disagree.
+var input_space: int = InputManager.Space.SCREEN
+
 ## True for games played on one communal board rather than two split halves.
-## The shell skips the midline divider for these -- drawing a split down a
-## shared board is a lie about how the game is played.
-var shared_board: bool = false
+var shared_board: bool:
+	get: return view_mode == ViewMode.SHARED
 
 signal match_ended(winner: int, score_p1: int, score_p2: int)
 

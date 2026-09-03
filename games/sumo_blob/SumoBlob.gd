@@ -4,10 +4,7 @@ extends MiniGame
 ## the round to force a resolution. Best of 3. Manual circle-physics with a
 ## simple procedural squash-and-stretch (no external art needed for the feel).
 
-const RADIUS_START := 300.0
-const RADIUS_END := 120.0
 const SHRINK_DURATION := 30.0
-const BLOB_RADIUS := 52.0
 const DASH_IMPULSE := 520.0
 const DASH_COOLDOWN := 0.4
 const FRICTION := 3.0
@@ -15,7 +12,14 @@ const ROUNDS_TO_WIN := 2
 const SQUASH_RECOVERY := 8.0
 
 var platform_center := Vector2.ZERO # from the real visible rect -- see Field.gd
-var platform_radius := RADIUS_START
+## Dohyo size is derived, never fixed. The old constants (300 -> 120) were tuned
+## against a 1280-wide landscape field; on a 720-wide portrait one a 300px radius
+## is 83% of the width, so the platform ran off both sides and a blob could be
+## knocked "out" while still visually on the clay.
+var radius_start := 300.0
+var radius_end := 120.0
+var blob_radius := 52.0
+var platform_radius := 300.0
 var elapsed := 0.0
 
 var p1_pos := Vector2.ZERO
@@ -48,6 +52,8 @@ func _init() -> void:
 	match_duration = 0.0
 	theme_bg = Palette.BG_SUMO
 	theme_dark = true
+	view_mode = ViewMode.FIELD
+	input_space = InputManager.Space.SCREEN
 
 ## The dohyo follows the live viewport; the blobs move with it so their
 ## position relative to the platform edge (which is what decides the round) is
@@ -59,6 +65,13 @@ func layout() -> void:
 		p1_pos += delta
 		p2_pos += delta
 	platform_center = new_center
+
+	radius_start = minf(Field.width(), Field.play_height()) * 0.44
+	radius_end = radius_start * 0.40
+	blob_radius = clampf(radius_start * 0.17, 30.0, 58.0)
+	# Re-derive the current radius from elapsed rather than resetting it, so a
+	# resize mid-round does not hand the trailing player a fresh platform.
+	platform_radius = lerpf(radius_start, radius_end, elapsed / SHRINK_DURATION)
 	queue_redraw()
 
 func setup(_config: Dictionary) -> void:
@@ -71,7 +84,7 @@ func start_match() -> void:
 	_match_active = true
 	set_process(true)
 
-func _on_touch(player: int, _zone: int, _position: Vector2) -> void:
+func _on_touch(player: int, _zone: int, _position: Vector2, _screen: Vector2) -> void:
 	if not _match_active or _round_locked:
 		return
 	var cooldown: float = p1_cooldown if player == 1 else p2_cooldown
@@ -81,7 +94,8 @@ func _on_touch(player: int, _zone: int, _position: Vector2) -> void:
 	var pos: Vector2 = p1_pos if player == 1 else p2_pos
 	var dir := (platform_center - pos).normalized()
 	if dir == Vector2.ZERO:
-		dir = Vector2.RIGHT if player == 1 else Vector2.LEFT
+		# Player 1 starts below the centre, Player 2 above it.
+		dir = Vector2.UP if player == 1 else Vector2.DOWN
 
 	if player == 1:
 		p1_vel += dir * DASH_IMPULSE
@@ -101,7 +115,7 @@ func _process(delta: float) -> void:
 		return
 
 	elapsed = minf(elapsed + delta, SHRINK_DURATION)
-	platform_radius = lerpf(RADIUS_START, RADIUS_END, elapsed / SHRINK_DURATION)
+	platform_radius = lerpf(radius_start, radius_end, elapsed / SHRINK_DURATION)
 
 	p1_cooldown = maxf(0.0, p1_cooldown - delta)
 	p2_cooldown = maxf(0.0, p2_cooldown - delta)
@@ -146,7 +160,7 @@ func _step_blob(pos: Vector2, vel: Vector2, delta: float) -> Array:
 func _resolve_blob_collision() -> void:
 	var diff := p2_pos - p1_pos
 	var dist := diff.length()
-	var min_dist := BLOB_RADIUS * 2.0
+	var min_dist := blob_radius * 2.0
 	if dist >= min_dist or dist <= 0.001:
 		return
 
@@ -183,10 +197,11 @@ func _resolve_round(round_winner: int) -> void:
 		_round_locked = false
 
 func _reset_round() -> void:
-	platform_radius = RADIUS_START
+	platform_radius = radius_start
 	elapsed = 0.0
-	p1_pos = platform_center + Vector2(-150, 0)
-	p2_pos = platform_center + Vector2(150, 0)
+	# Portrait: Player 1 starts on their own (bottom) side of the dohyo.
+	p1_pos = platform_center + Vector2(0, radius_start * 0.5)
+	p2_pos = platform_center + Vector2(0, -radius_start * 0.5)
 	p1_vel = Vector2.ZERO
 	p2_vel = Vector2.ZERO
 	p1_squash = Vector2.ONE
@@ -203,19 +218,20 @@ func _draw() -> void:
 	draw_circle(platform_center, platform_radius, Palette.DOHYO_CLAY)
 	draw_arc(platform_center, platform_radius * 0.80, 0.0, TAU, 56, Palette.SURFACE.lerp(Palette.DOHYO_CLAY, 0.35), 6.0)
 
-	# Face the blobs toward each other so they read as opponents.
-	_draw_blob(p1_pos, p1_squash, Palette.PLAYER_1, 1.0 if p1_pos.x < p2_pos.x else -1.0)
-	_draw_blob(p2_pos, p2_squash, Palette.PLAYER_2, 1.0 if p2_pos.x < p1_pos.x else -1.0)
+	# Face the blobs toward each other so they read as opponents. In portrait
+	# they face up/down the screen rather than across it.
+	_draw_blob(p1_pos, p1_squash, Palette.PLAYER_1, 1.0 if p1_pos.y < p2_pos.y else -1.0)
+	_draw_blob(p2_pos, p2_squash, Palette.PLAYER_2, 1.0 if p2_pos.y < p1_pos.y else -1.0)
 
 ## The blobs are the game's mascot, drawn procedurally so they can squash and
 ## stretch with the physics -- a static sprite can't. Body, blush, eyes with
 ## pupils that lean into the direction of travel, and a mouth. Previously these
 ## were flat untextured circles in a game called Sumo Blob (GAME_AUDIT.md M2).
 func _draw_blob(pos: Vector2, squash: Vector2, color: Color, facing: float) -> void:
-	var rx := BLOB_RADIUS * squash.x
-	var ry := BLOB_RADIUS * squash.y
+	var rx := blob_radius * squash.x
+	var ry := blob_radius * squash.y
 
-	var ow := Juice.outline_width(BLOB_RADIUS)
+	var ow := Juice.outline_width(blob_radius)
 	var cast := PackedVector2Array()
 	for p in _unit_pts:
 		cast.append(pos + Juice.SHADOW_OFFSET + Vector2(p.x * (rx + ow), p.y * (ry + ow)))
@@ -243,7 +259,7 @@ func _draw_blob(pos: Vector2, squash: Vector2, color: Color, facing: float) -> v
 	for side in [-1.0, 1.0]:
 		var eye_c := Vector2(pos.x + side * eye_dx, eye_y)
 		draw_circle(eye_c, eye_r, Palette.SURFACE)
-		draw_circle(eye_c + Vector2(facing * eye_r * 0.32, 0.0), eye_r * 0.52, Palette.INK)
+		draw_circle(eye_c + Vector2(0.0, facing * eye_r * 0.32), eye_r * 0.52, Palette.INK)
 
 	# Blush + a small determined mouth.
 	var blush := Color(1, 1, 1, 0.28)

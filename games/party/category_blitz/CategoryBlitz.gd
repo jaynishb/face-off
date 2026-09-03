@@ -23,6 +23,8 @@ var _progress := 0.0
 var _buzzing := false
 var _arc_center := Vector2.ZERO
 
+var _content_top := 0.0
+
 func _init() -> void:
 	game_id = "category_blitz"
 	display_name = "Category Blitz"
@@ -77,8 +79,11 @@ func setup(_config: Dictionary) -> void:
 func layout() -> void:
 	if not _prompt_card:
 		return
-	var mid := Field.mid_x()
-	var top := Field.top() + 20.0
+	var mid := Field.center().x
+	# Centred in the play area rather than pinned to its top -- see
+	# PartyGame.content_top(). The height is this game's own content block.
+	_content_top = content_top(460.0)
+	var top := _content_top
 
 	_pack_option.position = Vector2(mid - 100, top)
 	_pack_option.size = Vector2(200, 44)

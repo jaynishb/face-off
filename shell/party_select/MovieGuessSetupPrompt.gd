@@ -46,8 +46,15 @@ func show_prompt(saved_filters: Dictionary) -> void:
 	var style := UIUtil.soft_panel_style(Palette.SURFACE, 28.0)
 	style.set_content_margin_all(28)
 	card.add_theme_stylebox_override("panel", style)
-	card.custom_minimum_size = Vector2(880, 560)
-	card.position = Vector2(Field.mid_x() - 440, Field.shell_top_offset() + Field.NOMINAL_HEIGHT * 0.5 - 280)
+	# Sized against the live viewport. The old fixed 880x560 was authored for a
+	# 1280-wide landscape screen and is wider than a portrait phone, so the
+	# filter chips and the confirm button sat off both edges.
+	var card_size := Vector2(
+		minf(Field.width() - 48.0, 880.0),
+		minf(Field.height() - 120.0, 700.0),
+	)
+	card.custom_minimum_size = card_size
+	card.position = (Field.rect().size - card_size) * 0.5
 	add_child(card)
 	UIUtil.pop_in(card, 0.05)
 

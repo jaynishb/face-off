@@ -5,59 +5,93 @@ extends Control
 ## subsequent taps launch straight in. Deliberately separate from GameSelect/
 ## GameManager -- Party Mode games have no score/winner, so they get their
 ## own registry (PartyManager) rather than reusing the 1v1 one.
+##
+## Portrait, and laid out the same way GameSelect is: the list scrolls
+## VERTICALLY in two columns whose width follows the live viewport. It used to
+## be a 3-wide horizontally-scrolling grid pinned at 1128px, which is wider than
+## the whole 720px portrait screen -- the tiles ran off both edges.
+
+const COLUMNS := 2
+
+var _scroll: ScrollContainer
+var _grid: GridContainer
+var _back_btn: Button
+var _title: Label
+var _subtitle: Label
+var _tiles: Array[Control] = []
 
 func _ready() -> void:
 	UIUtil.gradient_bg(self, Palette.GRADIENT_PARTY_TOP, Palette.GRADIENT_PARTY_BOTTOM)
 	AudioManager.play_menu_music()
 
-	var back_btn := UIUtil.make_soft_round_button("<", 64, Palette.SURFACE)
-	back_btn.position = Vector2(24, 24)
-	back_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
-	add_child(back_btn)
+	_back_btn = UIUtil.make_soft_round_button("<", 64, Palette.SURFACE)
+	_back_btn.pressed.connect(func(): UIUtil.fade_to_scene(get_tree(), "res://shell/main_menu/MainMenu.tscn"))
+	add_child(_back_btn)
 
-	# Vertically centers the whole content block in portrait instead of
-	# leaving it pinned to the top with empty space below -- see
-	# Field.shell_top_offset(). 0 in landscape, so no change there.
-	var y := Field.shell_top_offset()
+	_title = UIUtil.make_label("PARTY MODE", 36)
+	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_title)
 
-	var title := UIUtil.make_label("PARTY MODE", 40)
-	title.position = Vector2(0, 24 + y)
-	title.size = Vector2(Field.width(), 60)
-	add_child(title)
+	_subtitle = UIUtil.make_label("Pass the phone around the group.", 20)
+	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_subtitle)
 
-	var subtitle := UIUtil.make_label("Pass the phone around the group.", 20)
-	subtitle.position = Vector2(0, 84 + y)
-	subtitle.size = Vector2(Field.width(), 32)
-	add_child(subtitle)
+	_scroll = ScrollContainer.new()
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	add_child(_scroll)
 
-	# Centred on the real visible rect, not a fixed 1280-wide box, so the tile
-	# grid doesn't sit left of centre on a wider-than-16:9 screen (Field.gd).
-	var grid_width := 3 * 360.0 + 2 * 24.0
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(Field.mid_x() - grid_width * 0.5, 150 + y)
-	scroll.size = Vector2(grid_width, 500)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
-
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 24)
-	grid.add_theme_constant_override("v_separation", 24)
-	scroll.add_child(grid)
+	_grid = GridContainer.new()
+	_grid.columns = COLUMNS
+	_grid.add_theme_constant_override("h_separation", 16)
+	_grid.add_theme_constant_override("v_separation", 16)
+	# Every Control between the ScrollContainer and the tiles has to be IGNORE,
+	# or the first one that is not swallows the drag and the list can only be
+	# scrolled from the thin gaps that happen to miss all of them. Container
+	# inherits Control's STOP default, so the grid needs this as much as the
+	# tiles do (GameSelect.gd carries the same note).
+	_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scroll.add_child(_grid)
 
 	var index := 0
 	for game_id in PartyManager.get_roster():
 		var tile := _build_tile(game_id)
-		grid.add_child(tile)
+		_grid.add_child(tile)
+		_tiles.append(tile)
 		UIUtil.pop_in(tile, index * 0.06)
 		index += 1
+
+	get_viewport().size_changed.connect(_relayout)
+	_relayout()
+
+## Every screen-derived size in one place, so the grid never sits off-centre or
+## overflows on a narrow or a 20:9 phone.
+func _relayout() -> void:
+	var w := Field.width()
+	var h := Field.height()
+	var margin := 22.0
+	var top := Field.SAFE_OUTER + 12.0
+
+	_back_btn.position = Vector2(margin, top)
+	_title.position = Vector2(0, top + 12)
+	_title.size = Vector2(w, 56)
+	_subtitle.position = Vector2(0, top + 66)
+	_subtitle.size = Vector2(w, 32)
+
+	var content_w := w - margin * 2.0
+	var content_top := top + 112.0
+	_scroll.position = Vector2(margin, content_top)
+	_scroll.size = Vector2(content_w, h - content_top - Field.SAFE_OUTER - 12.0)
+
+	var tile_w := (content_w - 16.0 * (COLUMNS - 1)) / COLUMNS
+	for tile in _tiles:
+		tile.custom_minimum_size = Vector2(tile_w, tile_w * 0.86)
 
 func _build_tile(game_id: String) -> Control:
 	var meta := PartyManager.get_party_game_meta(game_id)
 
+	# Size is set by _relayout() from the live viewport, not fixed here.
 	var tile := Control.new()
-	tile.custom_minimum_size = Vector2(360, 220)
 	tile.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 	var panel := Panel.new()
@@ -93,8 +127,18 @@ func _build_tile(game_id: String) -> Control:
 	badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	vbox.add_child(badge)
 
-	var rules_btn := UIUtil.make_soft_round_button("?", 40, Palette.SURFACE)
-	rules_btn.position = Vector2(360 - 56, 8)
+	# Anchored to the tile's right edge by anchors PLUS offsets. A fixed
+	# .position assumed a 360px tile and would drift now that the width follows
+	# the viewport; PRESET_TOP_RIGHT alone anchors the button's LEFT edge to the
+	# tile's right edge so it hangs outside and overlaps its neighbour; and a
+	# manual .position on top of a preset double-offsets (see CLAUDE.md).
+	var rules_btn := UIUtil.make_soft_round_button("?", 38, Palette.SURFACE)
+	rules_btn.anchor_left = 1.0
+	rules_btn.anchor_right = 1.0
+	rules_btn.offset_left = -46.0
+	rules_btn.offset_right = -8.0
+	rules_btn.offset_top = 8.0
+	rules_btn.offset_bottom = 46.0
 	rules_btn.pressed.connect(func(): _show_rules(game_id))
 	tile.add_child(rules_btn)
 

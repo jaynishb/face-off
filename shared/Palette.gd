@@ -40,6 +40,22 @@ const DOHYO_CLAY := Color("#E5C089")
 const TURN_TINT_P1 := Color("#EE9078")
 const TURN_TINT_P2 := Color("#67AFD6")
 
+## Sports set grounds. Each game owns a full-screen ground colour so moving
+## between games feels like moving between venues rather than reskinning one
+## cream screen (see MiniGame.theme_bg).
+const BG_BASKETBALL := Color("#2E3A59")
+const COURT_WOOD := Color("#F2DDB0")
+const BG_SPRINT := Color("#3B6FA0")
+const TRACK_RED := Color("#D9604F")
+const INFIELD_GREEN := Color("#4ECB8D")
+const BG_DIVING := Color("#8FD4E8")
+const POOL_TEAL := Color("#22B8CF")
+const BG_HORSE := Color("#9BC7E0")
+const PADDOCK_SAND := Color("#DBA97C")
+const BG_SWIM := Color("#1E6A85")
+const BG_ARCHERY := Color("#A9D9B4")
+const RANGE_GRASS := Color("#5FC98F")
+
 const BOARD_CHARCOAL := Color("#2A3038")
 const BOARD_HOLE := Color("#49535E")
 

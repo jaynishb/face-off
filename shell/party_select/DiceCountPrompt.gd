@@ -29,8 +29,12 @@ func show_prompt(initial_count: int) -> void:
 	var style := UIUtil.soft_panel_style(Palette.SURFACE, 28.0)
 	style.set_content_margin_all(32)
 	card.add_theme_stylebox_override("panel", style)
-	card.custom_minimum_size = Vector2(480, 300)
-	card.position = Vector2(Field.mid_x() - 240, Field.shell_top_offset() + Field.NOMINAL_HEIGHT * 0.5 - 150)
+	# Sized against the live viewport, not a fixed 480px: on a 720px-wide
+	# portrait screen a card wider than the screen runs off both edges, and the
+	# stepper buttons at its corners go with it.
+	var card_size := Vector2(minf(Field.width() - 64.0, 480.0), 300.0)
+	card.custom_minimum_size = card_size
+	card.position = (Field.rect().size - card_size) * 0.5
 	add_child(card)
 	UIUtil.pop_in(card, 0.05)
 
