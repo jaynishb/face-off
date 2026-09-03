@@ -18,6 +18,26 @@ const POWER_RATE := 1.9
 const TUCK_SPIN := 6.4
 const OPEN_SPIN := 1.5
 
+## Launch speed, in art-scale units per second: LAUNCH_BASE at a dead meter,
+## LAUNCH_BASE + LAUNCH_RANGE at a full one. Local -y is the SEAM, so every pixel
+## of extra height is a pixel closer to the opponent's half -- a dive that
+## overshoots is drawn over their dive, upside down.
+##
+## So these are not free numbers. The full-power rise is
+##   (LAUNCH_BASE + LAUNCH_RANGE)^2 / (2 * GRAVITY)
+## in art units, and BOARD_DROP below has to exceed it. tools/Playability.tscn
+## asserts exactly that; change one of the three and it will tell you.
+const LAUNCH_BASE := 260.0
+const LAUNCH_RANGE := 240.0
+const LAUNCH_OUT := 120.0   ## sideways push off the board, out over the water
+
+## Board and water line, in art-scale units from the top of the half. Fractions of
+## the play rect were the bug: they moved the board with the handset while the
+## launch speed stayed fixed, so the same dive cleared the seam on one phone and
+## not on another.
+const BOARD_DROP := 220.0
+const WATER_DROP := 400.0
+
 enum Phase { READY, FLIGHT, SPLASH, DONE }
 
 var board_tip := Vector2.ZERO
@@ -49,8 +69,14 @@ func _init() -> void:
 
 func _on_layout() -> void:
 	diver_radius = 20.0 * art_scale
-	board_tip = Vector2(play_rect.position.x + play_rect.size.x * 0.28, play_rect.position.y + play_rect.size.y * 0.26)
-	water_y = play_rect.end.y - play_rect.size.y * 0.24
+	board_tip = Vector2(
+		play_rect.position.x + play_rect.size.x * 0.28,
+		play_rect.position.y + BOARD_DROP * art_scale,
+	)
+	water_y = minf(
+		play_rect.position.y + WATER_DROP * art_scale,
+		play_rect.end.y - 40.0 * art_scale,
+	)
 	for player in [1, 2]:
 		if phase[player] == Phase.READY:
 			pos[player] = board_tip + Vector2(0.0, -diver_radius)
@@ -85,7 +111,10 @@ func _on_press(player: int, _zone: int, _position: Vector2, _screen: Vector2) ->
 			launch_power[player] = power[player]
 			# The board throws the diver up-court (toward the seam, -y local) and
 			# slightly out over the water.
-			vel[player] = Vector2(120.0 * art_scale, -(320.0 + 300.0 * power[player]) * art_scale)
+			vel[player] = Vector2(
+				LAUNCH_OUT * art_scale,
+				-(LAUNCH_BASE + LAUNCH_RANGE * power[player]) * art_scale,
+			)
 			phase[player] = Phase.FLIGHT
 			tucking[player] = true
 			AudioManager.play_sfx("dash", player)

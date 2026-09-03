@@ -45,12 +45,22 @@ func _on_layout() -> void:
 	# their half from their end of the phone. So the lane sits out on the painted
 	# track and BOTH pads stack inboard of it, rather than the pads bracketing a
 	# lane stranded on the infield grass.
-	var band := play_rect.size.y * 0.28
+	#
+	# The two zones TILE the half exactly. They used to be two 28% bands, which
+	# left 44% of the half -- including the whole track the runner is on, the most
+	# natural place to jab a thumb -- registering nothing at all. A tap that lands
+	# on a half and does nothing reads as a broken game, not as a missed button.
+	# The drawn pads stay pads; they are the affordance, not the hit target, and
+	# each one is drawn well inside its own zone (see pad_rect).
+	var band := play_rect.size.y * 0.5
 	_button_rects = {
 		ZONE_NEAR: Rect2(play_rect.position, Vector2(play_rect.size.x, band)),
-		ZONE_FAR: Rect2(Vector2(play_rect.position.x, play_rect.position.y + band + 6.0), Vector2(play_rect.size.x, band)),
+		ZONE_FAR: Rect2(
+			Vector2(play_rect.position.x, play_rect.position.y + band),
+			Vector2(play_rect.size.x, play_rect.size.y - band),
+		),
 	}
-	lane_y = play_rect.position.y + play_rect.size.y * 0.82
+	lane_y = play_rect.position.y + play_rect.size.y * 0.84
 	track_start = play_rect.position.x + 40.0 * art_scale
 	track_end = play_rect.end.x - 40.0 * art_scale
 
@@ -142,6 +152,23 @@ func _draw_track(player: int) -> void:
 	var ox := lerpf(track_start, track_end, distance[other] / RACE_DISTANCE)
 	draw_line(Vector2(ox, lane_y - h), Vector2(ox, lane_y + h), Color(Palette.for_player(other), 0.55), 4.0)
 
+## The drawn pad for a zone -- the ONE definition, so what is painted and what the
+## harness measures cannot drift apart. The zone itself is the hit target and is
+## always larger than this; the pad is where the eye is invited to press.
+##
+## The near pad sits in the middle of its zone; the far pad rides high in its own,
+## so it clears the running lane rather than being painted across the track.
+func pad_rect(zone: int) -> Rect2:
+	var rect: Rect2 = _button_rects.get(zone, Rect2())
+	if rect.size == Vector2.ZERO:
+		return Rect2()
+	var size := Vector2(
+		rect.size.x - 130.0 * art_scale,
+		minf(rect.size.y * 0.32, 84.0 * art_scale),
+	)
+	var cy: float = rect.position.y + rect.size.y * (0.5 if zone == ZONE_NEAR else 0.26)
+	return Rect2(Vector2(rect.get_center().x - size.x * 0.5, cy - size.y * 0.5), size)
+
 func _draw_pad(player: int, zone: int) -> void:
 	var rect: Rect2 = _button_rects.get(zone, Rect2())
 	if rect.size == Vector2.ZERO:
@@ -150,8 +177,7 @@ func _draw_pad(player: int, zone: int) -> void:
 	var is_next: bool = _last_zone[player] != zone
 	var press: float = _flash.get("%d_%d" % [player, zone], 0.0) / 0.12
 
-	var size := Vector2(minf(rect.size.x * 0.58, 300.0), minf(rect.size.y * 0.72, 92.0))
-	var btn := Rect2(rect.get_center() - size * 0.5, size)
+	var btn := pad_rect(zone)
 	btn.position.y += 5.0 * press
 	var fill: Color = color if is_next else color.lerp(Palette.BG_SPRINT, 0.5)
 	if press > 0.0:

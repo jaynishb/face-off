@@ -8,11 +8,29 @@ extends SplitGame
 ## conditions on every arrow, so the match is decided by aim and not by luck.
 
 const ARROWS := 5
-const GRAVITY := 620.0
-const DRAW_POWER := 2.4
-const MAX_SPEED := 1250.0
+## Gravity, wind and launch speed are all multiplied by art_scale, and the archer
+## and target sit at fixed art-scale offsets, so distance, drop and drift all grow
+## together: the arrow follows the SAME arc across the half on every handset.
+const GRAVITY := 420.0
+## Drag-to-launch-speed. Tuned against the archery pass of tools/Playability.tscn,
+## which fires every drag that physically fits and counts the ones that hit the
+## face: at the original 2.4 the answer was zero, because the longest drag the
+## archer's corner allowed produced 384 px/s against the 714 px/s the shot needed.
+const DRAW_POWER := 4.2
+const MAX_SPEED := 1600.0
 const WIND_MAX := 190.0
 const WIND_RATE := 0.45
+
+## Archer and target, in art-scale units from the top-left of the half.
+##
+## These were fractions of the play rect, which is the bug pattern Basketball hit:
+## a taller handset stretched the shot while the power stayed put. Anchoring both
+## to art_scale keeps the range constant and spends spare height on empty ground.
+## The archer is also well clear of the corner -- the drag that shoots at the
+## target runs BACK from it, so pinning the archer into a corner is what leaves
+## no room to pull.
+const ARCHER_ANCHOR := Vector2(220.0, 250.0)
+const TARGET_ANCHOR := Vector2(470.0, 85.0)
 
 enum Phase { AIM, FLIGHT, SCORED, DONE }
 
@@ -44,9 +62,18 @@ func _init() -> void:
 	theme_bg = Palette.BG_ARCHERY
 
 func _on_layout() -> void:
-	target_radius = clampf(play_rect.size.x * 0.11, 34.0, 76.0)
-	archer_pos = Vector2(play_rect.position.x + play_rect.size.x * 0.16, play_rect.end.y - play_rect.size.y * 0.20)
-	target_center = Vector2(play_rect.end.x - target_radius - 18.0, play_rect.position.y + play_rect.size.y * 0.34)
+	# The face is generous on purpose: the ten rings inside it are what reward
+	# accuracy, so a wide face costs nothing and a narrow one just means most
+	# arrows score nothing at all and the match is decided by luck.
+	target_radius = clampf(play_rect.size.x * 0.15, 44.0, 108.0)
+	archer_pos = play_rect.position + ARCHER_ANCHOR * art_scale
+	target_center = play_rect.position + TARGET_ANCHOR * art_scale
+	# Safety clamps for a half shorter or narrower than the anchors assume. They
+	# only ever pull the two closer together, which makes the shot easier, never
+	# impossible.
+	archer_pos.y = minf(archer_pos.y, play_rect.end.y - 90.0 * art_scale)
+	target_center.x = minf(target_center.x, play_rect.end.x - target_radius - 12.0)
+	target_center.y = maxf(target_center.y, play_rect.position.y + target_radius + 6.0)
 	for player in [1, 2]:
 		if phase[player] == Phase.AIM:
 			arrow_pos[player] = archer_pos
@@ -105,15 +132,22 @@ func _process(delta: float) -> void:
 		if phase[player] != Phase.FLIGHT:
 			continue
 		var v: Vector2 = arrow_vel[player]
-		v.y += GRAVITY * delta
-		v.x += wind * delta
+		v.y += GRAVITY * art_scale * delta
+		v.x += wind * art_scale * delta
 		arrow_vel[player] = v
 		arrow_pos[player] += v * delta
 
 		var p: Vector2 = arrow_pos[player]
 		if p.distance_to(target_center) <= target_radius:
 			_score_arrow(player, p)
-		elif p.x > play_rect.end.x + 40.0 or p.y > play_rect.end.y + 40.0 or p.x < play_rect.position.x - 40.0:
+		elif (
+			p.x > play_rect.end.x + 40.0 or p.y > play_rect.end.y + 40.0
+			or p.x < play_rect.position.x - 40.0
+			# Local -y is the seam. An arrow lobbed over the top would otherwise be
+			# drawn across it, into the opponent's half and upside down; out of the
+			# half is out of bounds, and costs the arrow.
+			or p.y < play_rect.position.y - 30.0
+		):
 			_score_arrow(player, Vector2.INF)
 
 	queue_redraw()
@@ -222,14 +256,31 @@ func _draw_archer_fallback(color: Color) -> void:
 ## show the same value because the wind is shared.
 func _draw_wind() -> void:
 	var t := wind / WIND_MAX
-	var origin := Vector2(play_rect.get_center().x, play_rect.position.y + 34.0)
-	var length := play_rect.size.x * 0.22 * absf(t)
+	# On a plain sky the bare arrow read as a stray line rather than an instrument,
+	# so it sits on its own labelled plate, anchored to the half's top-left instead
+	# of floating over the middle of the range.
+	var plate := Rect2(
+		play_rect.position.x + 12.0, play_rect.position.y + 10.0,
+		200.0 * art_scale, 40.0 * art_scale,
+	)
+	Juice.rounded_rect(self, plate, Color(Palette.SURFACE, 0.78), 12.0)
+
+	var font := ThemeDB.fallback_font
+	draw_string(
+		font, Vector2(plate.position.x + 12.0, plate.get_center().y + 6.0),
+		"WIND", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(Palette.INK, 0.7),
+	)
+
+	var origin := Vector2(plate.position.x + 74.0 * art_scale, plate.get_center().y)
+	var span: float = plate.end.x - 12.0 - origin.x
+	var length: float = span * absf(t)
 	var dir := signf(t)
-	draw_line(origin, origin + Vector2(dir * length, 0.0), Color(Palette.INK, 0.5), 5.0)
+	# A dead-calm gauge still has to look like a gauge, not like nothing.
+	draw_line(origin, origin + Vector2(dir * maxf(length, 6.0), 0.0), Color(Palette.INK, 0.65), 5.0)
 	for i in range(3):
 		var x := origin.x + dir * (length - i * 9.0)
-		draw_line(Vector2(x, origin.y), Vector2(x - dir * 8.0, origin.y - 6.0), Color(Palette.INK, 0.5), 4.0)
-		draw_line(Vector2(x, origin.y), Vector2(x - dir * 8.0, origin.y + 6.0), Color(Palette.INK, 0.5), 4.0)
+		draw_line(Vector2(x, origin.y), Vector2(x - dir * 8.0, origin.y - 6.0), Color(Palette.INK, 0.65), 4.0)
+		draw_line(Vector2(x, origin.y), Vector2(x - dir * 8.0, origin.y + 6.0), Color(Palette.INK, 0.65), 4.0)
 
 func _draw_aim(player: int, color: Color) -> void:
 	var pull: Vector2 = archer_pos - aim_to[player]
@@ -241,7 +292,9 @@ func _draw_aim(player: int, color: Color) -> void:
 		var t := i * 0.03
 		# Preview includes the current wind, so the aim guide never lies about
 		# the shot the player is actually taking.
-		var sample: Vector2 = archer_pos + v * t + Vector2(0.5 * wind * t * t, 0.5 * GRAVITY * t * t)
+		var sample: Vector2 = archer_pos + v * t + Vector2(
+			0.5 * wind * art_scale * t * t, 0.5 * GRAVITY * art_scale * t * t,
+		)
 		if i % 2 == 0:
 			draw_line(prev, sample, Color(Palette.SURFACE, 0.5), 3.0)
 		prev = sample
@@ -264,7 +317,8 @@ func _draw_card(player: int, color: Color) -> void:
 	var font := ThemeDB.fallback_font
 	var text := "ARROW %d/%d   TOTAL %d" % [minf(shots[player] + 1, ARROWS), ARROWS, total[player]]
 	draw_string(
-		font, Vector2(play_rect.position.x + 8.0, play_rect.position.y + 26.0),
+		# Below the wind plate, which owns the top-left corner of the half.
+		font, Vector2(play_rect.position.x + 14.0, play_rect.position.y + 72.0 * art_scale),
 		text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(Palette.INK, 0.75),
 	)
 	if phase[player] == Phase.SCORED and last_points[player] >= 0:

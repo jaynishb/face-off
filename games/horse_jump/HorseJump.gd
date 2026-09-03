@@ -6,9 +6,13 @@ extends SplitGame
 ## two riders face exactly the same hurdles — a race decided by timing, never by
 ## who drew the easier course.
 
-const COURSE_LENGTH := 1400.0
-const BASE_SPEED := 190.0
-const MAX_SPEED := 330.0
+## A 1400px course at 190px/s was a 7.4-second race -- under a third of the PRD's
+## 20-second floor, and over before either player has settled into the rhythm the
+## game is about. Lengthened and slowed to ~24s at base speed, ~15s ridden clean,
+## which is a race with a middle.
+const COURSE_LENGTH := 4000.0
+const BASE_SPEED := 170.0
+const MAX_SPEED := 260.0
 const SPEED_GAIN := 26.0      ## per clean jump
 const STUMBLE_PENALTY := 90.0
 const JUMP_IMPULSE := 520.0
