@@ -263,3 +263,6 @@ Also landed in this pass: real Air Hockey goal mouths (the whole end line used t
 ## Reference
 
 Full product spec, personas, wireframes, store listing copy, and success metrics: `FACE_OFF_PRD.md`.
+
+Group/party play (3+ players, hot-seat formats, session scoreboard, N-seat engine
+changes, new game ideas): `PARTY_MODE.md` — a proposal, nothing in it is built.
