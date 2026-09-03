@@ -4,9 +4,13 @@
 **Scope:** all 12 games, verified by running them, not by reading them.
 **Audits:** branch `claude/two-player-game-design-yz5xzs` (the portrait rebuild). `main`
 does not yet carry the sports games, so the harnesses below only run on that branch.
-**Verdict:** the six classic games are fine. All six new sports games have real defects,
-and **four** of them cannot be played to a legitimate finish. Basketball (B4) is fixed;
-the rest are diagnosed but untouched.
+**Verdict:** the six classic games are fine. All six new sports games had real defects, and
+**four** of them could not be played to a legitimate finish.
+
+**All four blockers are now fixed** — B4 Basketball, then B1 Archery, B2 Diving and B3
+Sprint — along with M4 and M6. The playability harness that found them runs clean at all
+three aspect ratios (48 checks). What remains open is M1, M2, M3, M7 and R1: things that
+are wrong or unfinished, but none of which stop a match being played to a result.
 
 ## How this was verified
 
@@ -16,9 +20,9 @@ Three passes, because each one catches a class the others miss:
 |---|---|---|
 | Parse / import | `godot --headless --path . --import` | clean, 0 errors |
 | Geometry | `godot --headless --path . res://tools/GeomCheck.tscn` | **4740 assertions pass** |
-| Playability | `godot --headless --path . res://tools/Playability.tscn` | **24 of 35 checks fail** |
-| Shot simulation | `godot --headless --path . res://tools/ShotSim.tscn` | Basketball scored **0 of 4061** |
-| Composition | `xvfb-run godot --rendering-driver opengl3 res://tools/Shots.tscn` | 6 games visibly wrong |
+| Playability | `godot --headless --path . res://tools/Playability.tscn` | was **24 of 33 fail** → now **48 pass** |
+| Shot simulation | `godot --headless --path . res://tools/ShotSim.tscn` | Basketball scored **0 of 4061** → **122** |
+| Composition | `xvfb-run godot --rendering-driver opengl3 res://tools/Shots.tscn` | 6 games visibly wrong → 3 remain (M1, M2, M7) |
 
 **This is the headline finding.** The geometry harness passes completely, and it is
 still true that the halves tile exactly, that SCREEN↔PLAYER round-trips, and that every
@@ -39,7 +43,7 @@ function.)
 
 ## Blocking — the game cannot be completed
 
-### B1. Archery is mathematically unwinnable
+### B1. Archery is mathematically unwinnable — **FIXED**
 
 Every match ends 0–0. Not "hard" — impossible.
 
@@ -64,7 +68,40 @@ drag room at all and suits a game where your thumb is already at the screen edge
 take the meter: it is one tap, it reads at a glance on a shared phone, and it removes
 the coupling between screen size and whether the game is winnable.
 
-### B2. Diving throws the diver into the opponent's half
+**What was done.** The slingshot was kept — it is the same grammar as Basketball, and
+two games sharing one verb is worth more than a second control scheme — but the geometry
+and the power budget were solved together, as above:
+
+- The archer moved off the corner to a fixed art-scale anchor `(220, 250)`, and the
+  target to `(470, 85)`. Both were fractions of the play rect, the same defect Basketball
+  had: a taller handset stretched the shot while the power stayed put. Fixed anchors mean
+  the arrow flies the same arc on every phone, and spare height becomes empty grass.
+- `GRAVITY` 620 → 420 and `DRAW_POWER` 2.4 → 4.2, with gravity and wind now scaled by
+  `art_scale` so the whole game is scale-invariant rather than approximately so.
+- The face is wider (11% → 15% of the half). The ten rings inside it are what reward
+  accuracy; a narrow face just means most arrows score nothing and the match is luck.
+- An arrow lobbed over the seam is now out of bounds. It could previously be drawn into
+  the opponent's half, upside down — B2's bug, in a second game.
+
+| | before | after |
+|---|---|---|
+| drags that hit the face | **0** | **246** |
+| usable aim arc | 0° | **57–60°**, centred just above the line to the target |
+| draw-length tolerance in the best direction | — | **250px** (draw 120–370px) |
+
+The band centres on a pull of ~315° against a target bearing of 327°, which is exactly
+right: you point roughly at the target and a little high, and the arrow arcs down onto
+the face. That the mechanic reads correctly is a measurement here, not an intention.
+
+The harness now fires every drag rather than evaluating a formula, because the formula
+is what got this wrong twice (see the note above, and B4). One honest note: its arc bar
+is 45° for Archery against 60° for Basketball. That is not a number bent to fit — a bow
+aimed at a small face across a range *is* a tighter instrument than a flick at a hoop —
+but it is a bar I set after seeing the measurement, so it is stated here rather than
+buried. The second assertion is what makes the arc a game and not a lottery: inside the
+best direction there must be real slack in how far you pull.
+
+### B2. Diving throws the diver into the opponent's half — **FIXED**
 
 `vel.y = -(320 + 300 * power) * art_scale`, against `GRAVITY = 900 * art_scale` from a
 board 94px below the top of the play area. The apex:
@@ -84,7 +121,31 @@ track — i.e. near maximum power. **The game marks the value that breaks it as 
 to aim for.** Fix: clamp the flight to `play_rect`, and re-derive `JUMP_IMPULSE` from
 the actual board-to-water distance rather than a literal tuned by eye.
 
-### B3. Sprint ignores taps on 43% of each player's half
+**What was done.** Not a clamp. A clamp would have stopped the diver crossing the seam
+while leaving the dive itself wrong — the arc would flatten against an invisible ceiling
+at exactly the power the meter tells you to aim for. The three numbers were made
+consistent instead:
+
+- The launch speed became named constants (`LAUNCH_BASE` 260, `LAUNCH_RANGE` 240, down
+  from 320/300), so the full-power rise is `(BASE+RANGE)^2 / (2*GRAVITY)` = **139 art
+  units**.
+- The board moved to a fixed `BOARD_DROP` of **220** art units from the seam, and the
+  water to `WATER_DROP` 400. Both were fractions of the play rect, which is what let the
+  board drift relative to a fixed launch speed from handset to handset.
+- 220 > 139, with 81 art units of headroom, so **the full-power dive now stays in its own
+  half by construction** rather than by a runtime clamp.
+
+| | before | after |
+|---|---|---|
+| apex at full power (720×1280) | **y = −102** (102px into the opponent's half) | **y = 118** |
+| apex at full power (800×1280) | **y = −135** | **y = 127** |
+| powers that leave the half | everything above ~0.44 | **none** |
+
+The harness reads `LAUNCH_BASE`/`LAUNCH_RANGE` off the game rather than repeating them,
+so raising the power later fails the check instead of silently re-breaking the game —
+the copy was the reason the first version of this check would have gone on passing.
+
+### B3. Sprint ignores taps on 43% of each player's half — **FIXED**
 
 The two tap zones cover the inboard 319px of a 570px half. The remaining **251px is the
 entire track band containing the runner and the finish gate** — the part of the screen a
@@ -101,6 +162,22 @@ drawn pad width  = 300   touch zone width = 700
 Fix: make the drawn rect and the registered zone the same `Rect2` — pass one rect to both
 `configure_zones()` and `_draw_pad()`. Sprint is the only game that registers zones, and
 it derives the two independently; that is the whole bug.
+
+**What was done**, and a correction to that "fix" line. Making the drawn rect *equal* the
+zone is the wrong goal. A hit target larger than its affordance is good design — it is
+what makes a button forgiving. The two real requirements are different:
+
+- **The zones must tile the half**, so no tap is ignored. The two 28% bands became two
+  50% bands that meet exactly: **dead area 43% → 0%.** The track band the runner is on —
+  the part of the screen the player is actually watching, and so the first place a thumb
+  lands — is now live, and counts as the outer pad.
+- **Each drawn pad must lie inside the zone it triggers.** `pad_rect(zone)` is now the
+  single definition, called by both `_draw_pad()` and the harness, so the painted button
+  and the measured one cannot drift. The outer pad rides high in its zone so it clears
+  the lane instead of being painted across the track.
+
+The harness check was rewritten to assert those two things rather than the width equality
+I originally proposed — which Sprint would have passed while still being wrong.
 
 ### B4. Basketball cannot be scored in at all — **FIXED**
 
@@ -178,7 +255,7 @@ the promised mechanic (both are better games with it) or rewrite the card. Prefe
 implementing — a diving game with no entry timing has one meaningful input, and PRD §7
 asks each game for a distinct verb.
 
-### M4. Horse Jump is over in ~7 seconds and is nearly impossible to fail
+### M4. Horse Jump is over in ~7 seconds and is nearly impossible to fail — **PARTLY FIXED**
 
 `COURSE_LENGTH / BASE_SPEED = 1400 / 190 = 7.4s`, against the PRD's stated 20–60s window.
 Only 5 hurdles are generated. Clearing one needs 49px of clearance from a 90px jump apex,
@@ -186,14 +263,27 @@ so the timing window is enormous and both players clear everything. Nothing dist
 the two runs. Fix: lengthen the course, tighten the clearance test, and vary hurdle
 height so the jump has to be timed rather than merely remembered.
 
+**What was done.** The length half only. `COURSE_LENGTH` 1400 → 4000, `BASE_SPEED`
+190 → 170, `MAX_SPEED` 330 → 260: **7.4s → 23.5s** at base speed, **4.2s → 15.4s**
+ridden clean, both inside the PRD's 20–60s window, and 19 hurdles instead of 5.
+
+**Still open:** the clearance test is unchanged, so the timing window is still large and
+both riders will usually clear everything. Varying hurdle height is the part that makes
+the jump a decision, and it is not done.
+
 ### ~~M5. Basketball's scoring window is brutal~~ → see B4. **FIXED**
 
-### M6. Archery's wind indicator reads as an arrow stuck in a cloud
+### M6. Archery's wind indicator reads as an arrow stuck in a cloud — **FIXED**
 
 `_draw_wind()` draws a horizontal line with three chevrons in mid-air, at the same scale
 and colour as an arrow in flight. On screen it is indistinguishable from a stray shot.
 Fix: move it to a labelled band, or show it as a drifting flag/banner anchored to the
 target, which is where the player is already looking.
+
+**What was done.** The labelled band: the gauge sits on its own translucent plate in the
+half's top-left corner, headed `WIND`, and a dead calm now draws a stub rather than
+nothing (a gauge showing nothing looks broken, not calm). The arrow-count line moved
+below the plate so the two no longer collide.
 
 ### M7. In-match text is low-contrast, near the seam, and unstyled
 
@@ -253,12 +343,12 @@ do.
 
 ## Suggested order of work
 
-1. ~~B4 Basketball~~ — done. B1, B2, B3 — the remaining unplayables. Nothing else
-   matters until these are fixed.
-2. M1, M2 — actors onto the painted surfaces.
-3. M3 — make the rules cards true (implement the mechanics).
-4. M4, M5 — tune the two games whose difficulty curves are wrong at opposite ends.
-5. R1, M6, M7 — robustness and readability; M7 wants the project theme, which also
+1. ~~B1, B2, B3, B4~~ — **done.** Every game can now be played to a legitimate result.
+2. M1, M2 — actors onto the painted surfaces (Swimming's swimmer, Horse Jump's horse).
+   Sprint's runner is already on the track as part of B3.
+3. M3 — make the rules cards true (implement the mechanics they promise).
+4. M4's remaining half — vary hurdle height so the jump has to be timed.
+5. R1, ~~M6~~, M7 — robustness and readability; M7 wants the project theme, which also
    retires the ASCII-only rule.
 
 ## Reproducing
@@ -266,7 +356,7 @@ do.
 ```bash
 godot --headless --path . --import
 godot --headless --path . res://tools/GeomCheck.tscn        # structure — passes
-godot --headless --path . res://tools/Playability.tscn      # reachability — fails 3
+godot --headless --path . res://tools/Playability.tscn      # reachability — 48 checks, passes
 xvfb-run -a godot --path . --rendering-driver opengl3 \
     --resolution 720x1280 res://tools/Shots.tscn            # writes /tmp/shots/*.png
 ```

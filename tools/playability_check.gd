@@ -77,29 +77,95 @@ func _max_pull_from(origin: Vector2, rect: Rect2, toward: Vector2) -> float:
 			best = maxf(best, pull.length())
 	return best
 
+## Archery, like Basketball, is checked by SIMULATION.
+##
+## The closed-form version below it (_min_launch_speed) is kept because it is the
+## right first question -- "is the target in range at all" -- but it is not a
+## sufficient one: it answers for the minimum-energy shot, which arrives with no
+## speed left, and it compares a diagonal drag's whole length against a
+## requirement that is not along the drag. Both errors flatter the game. Firing
+## the actual integration does not.
 func _check_archery() -> void:
 	var g := _load("archery")
-	var to_target: Vector2 = g.target_center - g.archer_pos
-	var pull: float = _max_pull_from(g.archer_pos, g.play_rect, to_target)
-	var available: float = minf(pull * g.DRAW_POWER, g.MAX_SPEED)
-	var needed: float = _min_launch_speed(to_target, g.GRAVITY)
+	var hitting := 0
+	var directions := 0
+	var best_span := 0.0
+	for angle_deg in range(0, 360, 3):
+		var first := -1
+		var last := -1
+		for length in range(20, 601, 10):
+			var pull: Vector2 = Vector2(length, 0).rotated(deg_to_rad(angle_deg))
+			# The finger has to land somewhere on the player's own half.
+			if not g.play_rect.has_point(g.archer_pos - pull):
+				continue
+			if _arrow_hits(g, pull):
+				hitting += 1
+				if first < 0:
+					first = length
+				last = length
+		if first >= 0:
+			directions += 1
+			best_span = maxf(best_span, float(last - first))
+	_expect(hitting > 0, "archery: NO drag hits the target -- every match ends 0-0")
+	# A narrower arc than Basketball's, deliberately: a bow aimed across the range
+	# at a small face IS a tighter instrument than a flick at a hoop, and the
+	# measured band is 57 degrees centred just above the line to the target, which
+	# is where a player would naturally point. What makes that a game rather than
+	# a lottery is the second assertion -- inside the best direction there must be
+	# real slack in how far back you pull, or every hit is an accident.
 	_expect(
-		available >= needed,
-		"archery: target unreachable -- best launch %.0f px/s, needs %.0f px/s" % [available, needed],
+		directions >= 15,
+		"archery: usable aim arc is only %d degrees" % (directions * 3),
+	)
+	_expect(
+		best_span >= 150.0,
+		"archery: best aim direction tolerates only %.0fpx of draw length" % best_span,
 	)
 	g.queue_free()
+
+## Replays Archery's own _process integration for one draw, at zero wind (the wind
+## is a skill modifier; a game that is only winnable on a favourable gust is not
+## winnable). Mirrors the out-of-bounds tests, seam included.
+func _arrow_hits(g, pull: Vector2) -> bool:
+	var rect: Rect2 = g.play_rect
+	var pos: Vector2 = g.archer_pos
+	var vel: Vector2 = (pull * g.DRAW_POWER).limit_length(g.MAX_SPEED)
+	var delta := 1.0 / 60.0
+	for step in range(600):
+		vel.y += g.GRAVITY * g.art_scale * delta
+		pos += vel * delta
+		if pos.distance_to(g.target_center) <= g.target_radius:
+			return true
+		if (
+			pos.x > rect.end.x + 40.0 or pos.y > rect.end.y + 40.0
+			or pos.x < rect.position.x - 40.0 or pos.y < rect.position.y - 30.0
+		):
+			return false
+	return false
 
 func _check_diving() -> void:
 	var g := _load("diving")
 	var start_y: float = g.board_tip.y - g.diver_radius
 	# Worst case is a full-power launch; the apex must stay inside the player's own
 	# half or the diver is drawn over the opponent's dive, upside down.
-	var v0: float = (320.0 + 300.0 * 1.0) * g.art_scale
+	#
+	# Read from the game's own constants, never retyped here: a copy would go on
+	# passing after someone raised the launch power, which is precisely the change
+	# this check exists to catch.
+	var v0: float = (g.LAUNCH_BASE + g.LAUNCH_RANGE) * g.art_scale
 	var apex: float = start_y - (v0 * v0) / (2.0 * g.GRAVITY * g.art_scale)
 	_expect(apex >= 0.0, "diving: full-power dive crosses the seam (apex y=%.0f)" % apex)
 	_expect(
 		apex >= g.play_rect.position.y,
 		"diving: full-power dive leaves the play area (apex y=%.0f, top=%.0f)" % [apex, g.play_rect.position.y],
+	)
+	# The water has to be below the board and on screen, or the dive is judged
+	# against a line the player cannot see.
+	_expect(
+		g.water_y > g.board_tip.y and g.water_y < g.play_rect.end.y,
+		"diving: water line at y=%.0f is not between the board (%.0f) and the edge (%.0f)" % [
+			g.water_y, g.board_tip.y, g.play_rect.end.y,
+		],
 	)
 	g.queue_free()
 
@@ -162,8 +228,14 @@ func _shot_scores(g, pull: Vector2) -> bool:
 			return false
 	return false
 
-## A tap pad that is drawn but not registered (or registered but not drawn) is the
-## same class of bug as the input split disagreeing with the drawn split.
+## A tap that lands on a player's own half and does nothing is indistinguishable,
+## to them, from a game with no controls -- the same class of bug as the input
+## split disagreeing with the drawn split.
+##
+## Two separate questions, and the second is NOT "is the pad as big as the zone".
+## A hit target larger than its affordance is a good thing; a pad drawn outside
+## the zone it triggers is a lie. So: the zones must tile the half, and each
+## drawn pad must lie inside the zone it belongs to.
 func _check_sprint() -> void:
 	var g := _load("sprint")
 	var covered := 0.0
@@ -171,17 +243,21 @@ func _check_sprint() -> void:
 		covered += (rect as Rect2).size.y
 	var dead: float = g.play_rect.size.y - covered
 	_expect(
-		dead <= g.play_rect.size.y * 0.15,
+		dead <= g.play_rect.size.y * 0.02,
 		"sprint: %.0f%% of the half ignores taps (%.0fpx of %.0fpx)" % [
 			dead / g.play_rect.size.y * 100.0, dead, g.play_rect.size.y,
 		],
 	)
 	for zone in g._button_rects:
 		var rect: Rect2 = g._button_rects[zone]
-		var drawn_w: float = minf(rect.size.x * 0.58, 300.0)
+		var pad: Rect2 = g.pad_rect(zone)
 		_expect(
-			drawn_w >= rect.size.x * 0.9,
-			"sprint: zone %d is drawn %.0fpx wide but registered %.0fpx wide" % [zone, drawn_w, rect.size.x],
+			rect.encloses(pad),
+			"sprint: zone %d's pad %s is drawn outside its own zone %s" % [zone, pad, rect],
+		)
+		_expect(
+			pad.size.x > 0.0 and pad.size.y > 0.0,
+			"sprint: zone %d has no drawn pad at all" % zone,
 		)
 	g.queue_free()
 
