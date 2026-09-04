@@ -2,6 +2,16 @@
 
 Guidance for Claude Code (and any dev) working in this repo. Read `FACE_OFF_PRD.md` first for full product context — this file is the condensed, dev-facing operating manual.
 
+## Keeping this file current — do this every session
+
+This file is the only handoff between sessions. A new session starts with no memory of the last one; it reads this file and nothing else, so anything not written here is lost. **Before ending a session that changed anything, update CLAUDE.md in the same commit as the code.** The rule is not "write a changelog" — git log already is one — it's:
+
+- **Add a session section** (`## <what the pass was about>`) at the bottom, above `## Reference`, for any pass that changes how the codebase works. Say what landed, and more importantly *why* — the constraint or bug that forced the design.
+- **Record every non-obvious bug and the rule it produced**, especially ones only a real device or a real run could catch. Those sections (the Godot `Control.mouse_filter` swallow, the `expand`-aspect coordinate-space split, the frozen-layout resize bug) are the highest-value content in this file, because none of them are visible by reading the code.
+- **Correct earlier sections when they turn out to be wrong** rather than only appending. Several "this can't be done in this environment" claims were false (audio, running Godot); each is now marked as a correction in place. A stale claim in this file actively stops the next session from trying.
+- **Update the contract, palette, and rule sections in place** when they change — a new `MiniGame` member or `Palette` constant belongs in the contract section above, not only in a dated session note at the bottom.
+- Keep the "outstanding / can't be done here" list honest. It's what the next session picks up first.
+
 ## What this is
 
 **Face Off** — a single mobile app containing 6 (launch) → 10 (post-launch) very short (20–60s) two-player games, both players playing simultaneously on one shared phone screen, split left/right. Fully offline. No login, no server, no network calls except the ad SDK.
@@ -58,14 +68,23 @@ var rules_text: String
 var rules_icon: Texture2D
 var match_duration: float   # 0 = untimed / first-to-win
 
+var theme_bg: Color         # this game's full-screen ground; the shell paints it
+var theme_dark: bool        # ground dark enough to need light-on-dark HUD treatment
+var shared_board: bool      # one communal board — shell skips the midline divider
+
 func setup(config: Dictionary) -> void
+func layout() -> void       # all screen-derived geometry; called after setup() AND on every resize
 func start_match() -> void
 func end_match(winner: int) -> void   # 1, 2, or 0 for draw
 
 signal match_ended(winner: int, score_p1: int, score_p2: int)
+signal theme_changed(bg: Color)                        # ground changed mid-match (turn tint)
+signal score_updated(score_p1: int, score_p2: int)     # optional, drives the live score pills
 ```
 
-Adding a new game = new folder under `/games` + one line in the game registry. If you find yourself editing shell code to add a game, stop — the contract is being violated somewhere.
+Adding a new game = new folder under `/games` + one line in the game registry. If you find yourself editing shell code to add a game, stop — the contract is being violated somewhere. Note what the theme fields buy: per-game grounds and shared-board handling are declared *by the game* and read by the shell, so the shell still contains zero `game_id` branches.
+
+`layout()` is not optional for anything positioned from screen size — see the resize section below for why computing geometry in `setup()` is a real, device-visible bug.
 
 ## InputManager — build first, touch with care
 
@@ -92,7 +111,7 @@ Fields: `ad_free`, `sfx_enabled`, `music_enabled`, `head_to_head_record` (sessio
 
 - **Symmetry is sacred.** Identical control area, identical visual weight for both players, regardless of which side of the phone they're on. Any layout change must be mirrored.
 - Player color coding is fixed and consistent across every game: P1 = coral `#FF5A5F`, P2 = teal `#22B8CF`. Never use red/green as the sole differentiator; always pair color with a shape/icon marker too (accessibility).
-- Full palette: background `#FFF4E0`, surface `#FFFDF7`, ink `#1D2B36`, accent `#FFC857`, success `#4ECB8D`.
+- Full palette: background `#FFF4E0`, surface `#FFFDF7`, ink `#1D2B36`, accent `#FFC857`, success `#4ECB8D`, outline `#12181D`. `#FFF4E0` is the *shell* ground only — each game declares its own ground via `theme_bg` (see the art-direction section below). All colours come from `Palette`; never hardcode a hex in a game or screen.
 - Fonts: chunky rounded geometric sans for display (Baloo 2 / Fredoka / Nunito ExtraBold), Nunito for body. Body text minimum 16sp.
 - Motion: back-out ease with overshoot everywhere, nothing linear. Button press = scale to 0.92 and bounce back. Screen transitions ≤200ms.
 - No music during matches — ever. Menu-only bouncy loop. Every SFX needs a P1/P2 pitch-shifted variant.
@@ -259,6 +278,33 @@ Re-verified properly this time using real touch events (Chrome DevTools Protocol
 Also landed in this pass: real Air Hockey goal mouths (the whole end line used to score) with a drawn rink and velocity-aware hits; symmetric Ping Pong paddles with a swept collision; visible Tap Race tap zones (the rules card referred to two buttons that were never drawn) with a cartoon car replacing the flat-circle racer; mascot faces on the Sumo Blob blobs; a filled Connect Four board; and a shared `TurnBanner` pairing colour with a shape marker and text, per the accessibility rule.
 
 **Verification lesson, restated because it keeps mattering:** check the thing input is supposed to move — paddle position, piece placement — never just the score. The playtest harness lives in `/tmp/pt` (not checked in); it drives `Input.dispatchTouchEvent` through CDP, including genuinely simultaneous two-finger input.
+
+## Art direction pass — per-game themes and sticker styling
+
+The visual system moved from "one cream screen with flat shapes on it" to the chunky-sticker look comparable two-player apps use: flat colour bounded by a hard near-black edge, one soft highlight, a consistent drop shadow, generous rounded corners.
+
+- **`Palette` gained `OUTLINE`** (near-black, deliberately heavier than `INK`, which is a *text* colour — a softer navy outline muddies the sticker read) **and a ground per game** (`BG_AIR_HOCKEY`, `BG_PING_PONG`, `BG_TAP_RACE`, `BG_SUMO`, plus `TURN_TINT_P1`/`TURN_TINT_P2` and board colours). Grounds are picked so coral and teal both stay legible on them — check that before adding another.
+- **The `MiniGame` contract gained `theme_bg` / `theme_dark` / `theme_changed` / `shared_board`.** The shell paints whatever ground the game declares, switches the HUD to light-on-dark when `theme_dark`, and skips the midline divider for communal-board games — drawing a split down a shared board is a lie about how the game is played. Still no `game_id` branching in shell code; the game declares, the shell obeys.
+- **Turn-based games tint the whole screen** to whoever is on the clock (`Palette.turn_tint()` via `set_theme_bg()`, tweened rather than cut). On a shared phone that is the fastest "it's you" signal available, and it's why `theme_changed` exists.
+- **`Juice` gained** outline weight that scales with the shape, drop shadows, and rounded-rect/capsule/sticker primitives built on `StyleBoxFlat`.
+- **The score bar became floating pills plus round icon buttons** instead of a solid strip. A strip forces one surface colour across every game's ground, which per-game themes make impossible. Pills pop when the number changes.
+- Per-game art: Ping Pong (yellow surround, framed green table, net, bats with handles), Air Hockey (pale ice on dark slate, recessed goal mouths, creases), Connect Four (charcoal slab, drilled sockets, next token queued at the feed slot), Tap Race (asphalt lanes, dashed markings, chequered posts, real chunky TAP/WAIT buttons replacing tinted half-screen overlays), Sumo Blob (raised clay dohyo, bigger blobs).
+
+Verified across all six games with the two-player touch harness.
+
+## Viewport resize — geometry computed once is a device-visible bug
+
+Two bugs a real device surfaced that the fixed-size test harness could not. The first produced a standing rule.
+
+**Layout was frozen at first-frame dimensions.** Every screen-derived position was computed once in `_ready()`/`setup()`. A phone browser resizes the canvas *after* load — the address bar collapses, the orientation settles — so those positions were stale by the time anyone looked at the screen: the Player 2 score pill ended up off the right edge entirely and boards sat off-centre. Tap Race was the sharpest case, because its `InputManager` zone rects are screen-derived too, so a stale layout left the buttons *drawn* in one place and *listening* in another.
+
+Fix: **`MiniGame.layout()`**, called by the shell after `setup()` and again on every viewport `size_changed`; `MatchHost` repositions its own HUD the same way.
+
+**Rule: no screen-derived geometry in `setup()` or `_ready()` — it goes in `layout()`, and it reads `Field`, never a stored size.** Implementations must be idempotent and preserve live state: paddles, ball and puck clamp back inside the new bounds, sumo blobs move with their platform, in-flight Connect Four tokens retarget onto the new board position. This is the same family of bug as the `expand`-aspect split above — the screen is not a constant, and treating it as one keeps costing devices-only bugs.
+
+**Connect Four drew falling tokens at `origin.y + f.y` when `f.y` is already absolute** (it's compared against `f.target`, which is absolute). Double-counting the origin drew the token drifting well below the board — on a phone, a stray disc off the bottom edge.
+
+Verified with the two-player harness: resize mid-match re-centres everything and both Tap Race cars still respond; Connect Four wins detected vertically, horizontally and diagonally; a full column correctly rejects a seventh drop; the drop animation stays inside its column throughout.
 
 ## Reference
 
