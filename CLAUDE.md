@@ -442,6 +442,27 @@ captures its base `y` **once**, and it was being started in `_ready()`, before t
 `_relayout()` positioned the mascots. It now returns its `Tween` so a caller that
 repositions the node can kill and restart it, which is what `MainMenu._relayout()` does.
 
+## The export packs its own output unless you stop it
+
+`export_filter="all_resources"` means the Web export packs **every imported resource in the
+project**, and Godot's importer scans `build/` like any other directory — so exporting into
+`build/pages/` generates `.import` files for the icons the export itself just wrote, and the
+*next* export bundles them into the game. `build/` being gitignored does not help: the
+importer works off the filesystem, not off git.
+
+It is only ~20KB a round, which is exactly why it survived — the download quietly grew each
+deploy and nothing failed. It also makes the build non-reproducible, so "was this artifact
+built from that commit?" stops being answerable by comparing sizes.
+
+`exclude_filter="build/*"` in the Web preset fixes it. **Mirror it into the tracked
+`export_presets.example.cfg`**, as with every other Web-preset setting — the real
+`export_presets.cfg` is gitignored, so a change made only there is lost on a fresh clone
+with no compile error to warn you.
+
+Two consecutive exports of identical source still differ by tens of bytes (resource
+ordering), so byte-equality is not the check. Compare the pack's *contents*:
+`strings -n 8 index.pck | grep -oE "res://[A-Za-z0-9_./-]+"`.
+
 **Still outstanding:**
 
 - **No project theme** registers the bundled fonts, so the ASCII-only rule still applies.
