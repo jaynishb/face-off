@@ -31,6 +31,7 @@ func _ready() -> void:
 		_check_basketball()
 		_check_sprint()
 		_check_horse_jump()
+		_check_swimming()
 
 	print("")
 	if _failures.is_empty():
@@ -228,6 +229,71 @@ func _shot_scores(g, pull: Vector2) -> bool:
 			return false
 	return false
 
+## Swimming's turn is an INPUT now, and an input the match depends on has to have
+## a way out: a swimmer pinned against the wall who never taps must still turn,
+## or the race hangs there and neither player can ever finish.
+##
+## Simulated rather than asserted about the constants -- "there is a timeout
+## constant" is not the same claim as "the turn actually happens".
+func _check_swimming() -> void:
+	var g := _load("swimming")
+	g.start_match()
+
+	# 1. The turn responds to a tap, which is what the rules card promises.
+	g.distance[1] = g.LANE_UNITS
+	g._process(1.0 / 60.0)
+	_expect(g.at_wall[1], "swimming: reaching the wall does not put the swimmer on it")
+	g._on_press(1, InputManager.NO_ZONE, Vector2.ZERO, Vector2.ZERO)
+	_expect(
+		not g.at_wall[1] and g.lengths[1] == 1,
+		"swimming: tapping at the wall does not turn -- the rules card promises it does",
+	)
+	_expect(g.speed[1] > 0.0, "swimming: the push-off leaves the swimmer stationary")
+	# Reacting fast has to beat dawdling, or the tap is not worth timing.
+	_expect(
+		g.PUSH_STRONG > g.PUSH_WEAK,
+		"swimming: a slow turn pushes off as hard as a fast one",
+	)
+	g.queue_free()
+
+	# 2. The turn happens anyway if nobody ever taps.
+	var h := _load("swimming")
+	h.start_match()
+	h.distance[1] = h.LANE_UNITS
+	var turned := false
+	for step in range(int((h.TURN_TIMEOUT + 1.0) * 60.0)):
+		h._process(1.0 / 60.0)
+		if h.lengths[1] >= 1 and not h.at_wall[1]:
+			turned = true
+			break
+	_expect(
+		turned,
+		"swimming: a swimmer who never taps at the wall never turns -- the match cannot end",
+	)
+	h.queue_free()
+
+	# 3. A player who plays it well finishes, inside the PRD's 20-60s window.
+	# The turn is new state between the start and the finish line, and new state
+	# on the path to winning is exactly where a race stops being completable.
+	var k := _load("swimming")
+	k.start_match()
+	var elapsed := 0.0
+	var delta := 1.0 / 60.0
+	while elapsed < 120.0 and k.lengths[1] < k.LENGTHS:
+		if k.at_wall[1] or k._on_beat():
+			k._on_press(1, InputManager.NO_ZONE, Vector2.ZERO, Vector2.ZERO)
+		k._process(delta)
+		elapsed += delta
+	_expect(
+		k.lengths[1] >= k.LENGTHS,
+		"swimming: a perfectly-played race never finishes (%.0fs and still going)" % elapsed,
+	)
+	_expect(
+		elapsed >= 20.0 and elapsed <= 60.0,
+		"swimming: a perfectly-played race takes %.1fs, outside the PRD's 20-60s window" % elapsed,
+	)
+	k.queue_free()
+
 ## A tap that lands on a player's own half and does nothing is indistinguishable,
 ## to them, from a game with no controls -- the same class of bug as the input
 ## split disagreeing with the drawn split.
@@ -263,9 +329,28 @@ func _check_sprint() -> void:
 
 func _check_horse_jump() -> void:
 	var g := _load("horse_jump")
-	var apex: float = (g.JUMP_IMPULSE * g.JUMP_IMPULSE) / (2.0 * g.GRAVITY)
-	var needed: float = g.hurdle_height * 0.72
-	_expect(apex >= needed, "horse_jump: hurdle uncleavable -- apex %.0f, needs %.0f" % [apex, needed])
+	# Impulse and gravity are both scaled by art_scale, so the apex is too --
+	# which is what keeps the clearance ratio the same on every handset.
+	var apex: float = (g.JUMP_IMPULSE * g.JUMP_IMPULSE * g.art_scale) / (2.0 * g.GRAVITY)
+	# The TALLEST hurdle is the one that has to be clearable. Checking the base
+	# height would pass while the top of the range was impossible, and a rider
+	# meeting an unjumpable rail cannot tell that from a mistimed jump.
+	var tallest: float = g.hurdle_height * g.MAX_HEIGHT * g.CLEARANCE
+	var shortest: float = g.hurdle_height * g.MIN_HEIGHT * g.CLEARANCE
+	_expect(
+		apex >= tallest,
+		"horse_jump: tallest hurdle unclearable -- apex %.0f, needs %.0f" % [apex, tallest],
+	)
+	# ... and the tallest must still be MEANT, or varying the height changed
+	# nothing: a rail cleared by an apex twice its height is not a decision.
+	_expect(
+		tallest >= apex * 0.5,
+		"horse_jump: even the tallest hurdle needs only %.0f of a %.0f apex -- timing is free" % [tallest, apex],
+	)
+	_expect(
+		shortest < tallest,
+		"horse_jump: every hurdle is the same height (%.0f)" % shortest,
+	)
 	# PRD 3: every game is 20-60 seconds. A 7-second race has no arc.
 	var fastest: float = g.COURSE_LENGTH / g.MAX_SPEED
 	var slowest: float = g.COURSE_LENGTH / g.BASE_SPEED

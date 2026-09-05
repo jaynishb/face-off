@@ -20,11 +20,29 @@ const GRAVITY := 1500.0
 const HURDLE_SPACING := 210.0
 const HURDLE_WIDTH := 26.0
 
+## Hurdles vary in height, as a multiple of `hurdle_height`. Every hurdle used to
+## be identical, and a jump that clears one clears them all -- the tap became
+## "press somewhere near the rail" rather than a timed decision, and both riders
+## cleared the whole course every time.
+##
+## The ceiling is bounded by the jump itself: the apex is JUMP_IMPULSE^2 /
+## (2 * GRAVITY) and a hurdle needs CLEARANCE of its own height, so the tallest
+## rail must stay under apex / (54 * CLEARANCE). tools/Playability.tscn asserts
+## it against MAX_HEIGHT rather than trusting the arithmetic here.
+const MIN_HEIGHT := 0.85
+const MAX_HEIGHT := 1.6
+const CLEARANCE := 0.72
+
 var ground_y := 0.0
 var rider_x := 0.0
 var hurdle_height := 54.0
 var horse_radius := 26.0
 var hurdles: Array[float] = []
+## Height multiplier for hurdles[i]. Parallel array rather than an Array of
+## Dictionaries: the draw loop and the clearance test both index by hurdle, and
+## a height that could go missing from one entry is a height the rider is judged
+## against but never sees.
+var hurdle_scale: Array[float] = []
 
 var travelled := {1: 0.0, 2: 0.0}
 var speed := {1: BASE_SPEED, 2: BASE_SPEED}
@@ -62,9 +80,11 @@ func _build_course() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	hurdles.clear()
+	hurdle_scale.clear()
 	var x := HURDLE_SPACING
 	while x < COURSE_LENGTH - 120.0:
 		hurdles.append(x)
+		hurdle_scale.append(rng.randf_range(MIN_HEIGHT, MAX_HEIGHT))
 		x += HURDLE_SPACING + rng.randf_range(-40.0, 70.0)
 
 func start_match() -> void:
@@ -74,7 +94,7 @@ func start_match() -> void:
 func _on_press(player: int, _zone: int, _position: Vector2, _screen: Vector2) -> void:
 	if not _match_active or air[player] > 0.0:
 		return
-	air_vel[player] = -JUMP_IMPULSE
+	air_vel[player] = -JUMP_IMPULSE * art_scale
 	air[player] = 0.01
 	AudioManager.play_sfx("dash", player)
 
@@ -118,7 +138,7 @@ func _step_jump(player: int, delta: float) -> void:
 		air[player] = 0.0
 		air_vel[player] = 0.0
 		return
-	air_vel[player] += GRAVITY * delta
+	air_vel[player] += GRAVITY * art_scale * delta
 	air[player] = maxf(0.0, air[player] - air_vel[player] * delta)
 	if air[player] <= 0.0:
 		air[player] = 0.0
@@ -131,6 +151,7 @@ func _check_hurdle(player: int) -> void:
 	if idx >= hurdles.size():
 		return
 	var hurdle_x: float = hurdles[idx]
+	var rail_height: float = hurdle_height * hurdle_scale[idx]
 	var front: float = travelled[player] + horse_radius
 	if front < hurdle_x:
 		return
@@ -138,7 +159,7 @@ func _check_hurdle(player: int) -> void:
 		return
 
 	_next_hurdle[player] = idx + 1
-	if air[player] >= hurdle_height * 0.72:
+	if air[player] >= rail_height * CLEARANCE:
 		cleared[player] += 1
 		speed[player] = minf(speed[player] + SPEED_GAIN, MAX_SPEED)
 		AudioManager.play_sfx("place", player)
@@ -163,12 +184,15 @@ func _draw_half(player: int) -> void:
 
 	# The course scrolls past a fixed rider, so the player's eye stays in one
 	# place rather than tracking a shrinking figure across the half.
+	# Indexed rather than a for-each plus hurdles.find(): the height belongs to
+	# the hurdle's INDEX, and looking it up by position would pick the first rail
+	# sharing that x and draw a hurdle at a height the rider is not judged against.
 	var scroll: float = travelled[player]
-	for hurdle_x in hurdles:
-		var sx: float = rider_x + (hurdle_x - scroll)
+	for i in range(hurdles.size()):
+		var sx: float = rider_x + (hurdles[i] - scroll)
 		if sx < play_rect.position.x - 60.0 or sx > play_rect.end.x + 60.0:
 			continue
-		_draw_hurdle(sx)
+		_draw_hurdle(sx, hurdle_scale[i])
 
 	var finish_x: float = rider_x + (COURSE_LENGTH - scroll)
 	if finish_x < play_rect.end.x + 40.0:
@@ -185,17 +209,21 @@ func _draw_fence() -> void:
 		draw_line(Vector2(x, y - 14.0 * art_scale), Vector2(x, ground_y), Color(Palette.SURFACE, 0.7), 4.0)
 		x += 74.0 * art_scale
 
-func _draw_hurdle(x: float) -> void:
+## Drawn at its OWN height, so what the rider sees is the rail they are judged
+## against. A hurdle drawn at a fixed height while the clearance test used a
+## varying one would be the cruellest possible version of this game.
+func _draw_hurdle(x: float, scale_h: float = 1.0) -> void:
+	var h: float = hurdle_height * scale_h
 	var tex := Art.game("horse_jump", "hurdle")
 	if tex:
-		sprite(tex, Vector2(x, ground_y - hurdle_height * 0.5), hurdle_height * 1.3)
+		sprite(tex, Vector2(x, ground_y - h * 0.5), h * 1.3)
 		return
 	var w := HURDLE_WIDTH * art_scale
 	for side in [-1.0, 1.0]:
-		var post := Rect2(x + side * w * 0.5 - 5.0 * art_scale, ground_y - hurdle_height, 9.0 * art_scale, hurdle_height)
+		var post := Rect2(x + side * w * 0.5 - 5.0 * art_scale, ground_y - h, 9.0 * art_scale, h)
 		Juice.sticker_rect(self, post, Palette.SURFACE, 4.0, 4.0)
 	for i in range(2):
-		var rail := Rect2(x - w * 0.5 - 6.0, ground_y - hurdle_height + 8.0 * art_scale + i * 22.0 * art_scale, w + 12.0, 9.0 * art_scale)
+		var rail := Rect2(x - w * 0.5 - 6.0, ground_y - h + 8.0 * art_scale + i * (h * 0.4), w + 12.0, 9.0 * art_scale)
 		Juice.sticker_rect(self, rail, Palette.PLAYER_1 if i == 0 else Palette.SURFACE, 4.0, 4.0)
 
 func _draw_finish(x: float) -> void:
@@ -255,9 +283,18 @@ func _draw_horse_fallback(player: int) -> void:
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
+## Down at the player's own outer edge, on the arena footing, rather than at the
+## top of the half -- which is open sky in the scene art, so a translucent track
+## was drawn over clouds with nothing behind it and no edge to read against.
+## A solid plate under it means it stays legible whatever the crop puts there.
 func _draw_progress(player: int) -> void:
-	var bar := Rect2(play_rect.position.x + 10.0, play_rect.position.y + 14.0, play_rect.size.x - 20.0, 12.0)
-	Juice.rounded_rect(self, bar, Color(Palette.INK, 0.20), 6.0)
+	var bar := Rect2(
+		play_rect.position.x + 10.0, play_rect.end.y - 26.0 * art_scale,
+		play_rect.size.x - 20.0, 12.0,
+	)
+	var plate := bar.grow(7.0)
+	Juice.rounded_rect(self, plate, Color(Palette.INK, 0.55), 10.0)
+	Juice.rounded_rect(self, bar, Color(Palette.SURFACE, 0.30), 6.0)
 	var other := 2 if player == 1 else 1
 	for p in [other, player]:
 		var t: float = travelled[p] / COURSE_LENGTH

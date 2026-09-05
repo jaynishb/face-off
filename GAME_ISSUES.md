@@ -8,9 +8,9 @@ does not yet carry the sports games, so the harnesses below only run on that bra
 **four** of them could not be played to a legitimate finish.
 
 **All four blockers are now fixed** — B4 Basketball, then B1 Archery, B2 Diving and B3
-Sprint — along with M4 and M6. The playability harness that found them runs clean at all
-three aspect ratios (48 checks). What remains open is M1, M2, M3, M7 and R1: things that
-are wrong or unfinished, but none of which stop a match being played to a result.
+Sprint — along with M4 and M6, and the Swimming and Horse Jump items (M1, M2, M3, M4's
+remainder). The playability harness that found them runs clean at all three aspect
+ratios (**75 checks**). What remains open is M3's Diving half, M7 and R1.
 
 ## How this was verified
 
@@ -20,9 +20,10 @@ Three passes, because each one catches a class the others miss:
 |---|---|---|
 | Parse / import | `godot --headless --path . --import` | clean, 0 errors |
 | Geometry | `godot --headless --path . res://tools/GeomCheck.tscn` | **4740 assertions pass** |
-| Playability | `godot --headless --path . res://tools/Playability.tscn` | was **24 of 33 fail** → now **48 pass** |
+| Playability | `godot --headless --path . res://tools/Playability.tscn` | was **24 of 33 fail** → now **75 pass** |
 | Shot simulation | `godot --headless --path . res://tools/ShotSim.tscn` | Basketball scored **0 of 4061** → **122** |
-| Composition | `xvfb-run godot --rendering-driver opengl3 res://tools/Shots.tscn` | 6 games visibly wrong → 3 remain (M1, M2, M7) |
+| Composition | `xvfb-run godot --rendering-driver opengl3 res://tools/Shots.tscn` | 6 games visibly wrong → M7 only |
+| Shell / party | `xvfb-run godot ... res://tools/ShellShots.tscn` | 11 screens, all render correctly |
 
 **This is the headline finding.** The geometry harness passes completely, and it is
 still true that the halves tile exactly, that SCREEN↔PLAYER round-trips, and that every
@@ -222,7 +223,7 @@ one working drag is not a game.
 
 ## Major — playable but wrong
 
-### M1. Swimming: the swimmer swims over the deck, not the pool
+### M1. Swimming: the swimmer swims over the deck, not the pool — **DOES NOT REPRODUCE / FIXED**
 
 `lane_y` is 55% down the half; the background art's water is a band across the middle of
 the *screen*. The swimmer tracks along the painted tiled deck instead. This is the exact
@@ -232,7 +233,28 @@ the next game written — which means the rule got written down but not applied.
 Also, the `wall` touchpad sprite is drawn at `pool.size.y * 0.62` tall and renders as a
 large white picture frame at each end of the lane, with the swimmer sometimes inside it.
 
-### M2. Horse Jump: the horse gallops on the border, below the paddock
+**Correction, on re-measuring.** The swimmer-on-the-deck half of this does **not**
+reproduce. Sampling the rendered pixels at 720×1280 and 720×1560 puts the painted water
+at local y 232–554 and 283–694 respectively, with `lane_y` at 356 and 432 — inside the
+water on both. The art pack landed after that audit and moved the crop. I am recording
+the correction rather than quietly dropping the item, because "the actor is on the wrong
+surface" was the claim, and it was measured wrong.
+
+The alignment was still only a **coincidence**: the lane and the drawn pool band were two
+independent fractions of the half that happened to overlap. The lane band is now derived
+from `lane_y`, so the ropes bracket the swimmer and the wall pads sit at the ends of the
+lane he actually swims, at any aspect ratio.
+
+**The picture-frame half was real and is fixed.** The pads are drawn at
+`min(pool height * 0.30, 96 * art_scale)` and moved outboard of the lane — a touchpad is
+a plate on the wall, not a proscenium arch.
+
+Also fixed while here: `LENGTH 1/4` was pale text drawn straight onto the scene, landing
+on the cream tiles of the painted deck at almost exactly its own colour. It now has a
+plate behind it, because which band of the crop lands under it depends on the viewport
+and there is no text colour that is safe everywhere.
+
+### M2. Horse Jump: the horse gallops on the border, below the paddock — **DOES NOT REPRODUCE / FIXED**
 
 `ground_y` is 68% down the half, which lands on the flat brown band outside the painted
 fence and grass. The horse and its hurdles sit on blank colour with the actual scenery
@@ -241,11 +263,35 @@ above them. Same root cause as M1.
 The progress bars are drawn at `play_rect.position.y + 14`, which puts them in open sky
 in the middle of the screen with nothing behind them.
 
-### M3. Two rules cards describe mechanics that do not exist
+**Correction, on re-measuring.** As with M1, the horse-on-the-border half does not
+reproduce: the painted arena sand starts at local y 362 (720×1280) and 444 (720×1560),
+and `ground_y` is 430 and 525 — on the sand in both, with the fence and grass behind it,
+which is what a show-jumping arena looks like. Measured, not eyeballed; my first read of
+the render had the two halves asymmetric, and sampling the pixels showed them
+mirror-exact (P1 local 362 against P2 local 363).
+
+**The progress bar was real and is fixed.** It moved to the player's own outer edge, on
+the arena footing, and sits on a solid plate — a translucent track over clouds had
+nothing behind it to read against.
+
+### M3. Two rules cards describe mechanics that do not exist — **SWIMMING FIXED**
 
 - **Swimming** says *"Tap the wall to turn."* There is no turn input — `_process` flips
   `heading` automatically at `distance >= LANE_UNITS`. Tapping anything, anywhere, only
-  ever strokes.
+  ever strokes. **FIXED, by implementing the mechanic rather than rewriting the card.**
+  Reaching the wall now stops the swimmer dead against it and waits; a tap pushes off,
+  and reacting inside `TURN_GRACE` gives `PUSH_STRONG` against `PUSH_WEAK` for dawdling,
+  so the turn is worth timing. A ring shrinks while you hesitate, so the cost is visible.
+
+  Two things fell out of it. `TURN_TIMEOUT` is a safety valve: without it a player who
+  never taps never turns and the match can never end, so the harness simulates a swimmer
+  who ignores the wall and asserts the race still finishes. And the length was banked at
+  the wall rather than at the push-off, which would have double-counted the score — the
+  live score and the final result now come from one `_progress()`.
+
+  Simulating a well-played race also showed it finishing in **15.5s**, under the PRD's
+  20-second floor and containing exactly **one** turn — the verb that had just been
+  added. It is four lengths now (~31s, three turns), and the rules card says so.
 - **Diving** says *"Tap to launch, hold to tuck. Tap again to enter straight."* The
   `Phase` enum has no ENTRY. The third tap does nothing; entry angle is whatever the
   somersault happened to leave.
@@ -267,9 +313,19 @@ height so the jump has to be timed rather than merely remembered.
 190 → 170, `MAX_SPEED` 330 → 260: **7.4s → 23.5s** at base speed, **4.2s → 15.4s**
 ridden clean, both inside the PRD's 20–60s window, and 19 hurdles instead of 5.
 
-**Still open:** the clearance test is unchanged, so the timing window is still large and
-both riders will usually clear everything. Varying hurdle height is the part that makes
-the jump a decision, and it is not done.
+**Now complete.** Hurdles vary between `MIN_HEIGHT` 0.85 and `MAX_HEIGHT` 1.6 of the base
+height, drawn at the height they are judged at — a rail drawn at a fixed height while the
+test used a varying one would be the cruellest possible version of this game.
+
+Jump impulse and gravity are now both scaled by `art_scale`, as Archery and Diving are.
+They were fixed pixels against a hurdle that scaled, so the same course was easier on a
+narrow phone than a wide one. Scaling both keeps the clearance ratio *and* the flight time
+constant on every handset.
+
+The harness asserts against the **tallest** hurdle (checking the base height would pass
+while the top of the range was impossible) and, in the other direction, that the tallest
+still needs at least half the apex — a rail cleared by an apex twice its height is not a
+decision, and varying the height would have changed nothing.
 
 ### ~~M5. Basketball's scoring window is brutal~~ → see B4. **FIXED**
 
@@ -344,10 +400,12 @@ do.
 ## Suggested order of work
 
 1. ~~B1, B2, B3, B4~~ — **done.** Every game can now be played to a legitimate result.
-2. M1, M2 — actors onto the painted surfaces (Swimming's swimmer, Horse Jump's horse).
-   Sprint's runner is already on the track as part of B3.
-3. M3 — make the rules cards true (implement the mechanics they promise).
-4. M4's remaining half — vary hurdle height so the jump has to be timed.
+2. ~~M1, M2~~ — **done.** The "wrong surface" halves did not reproduce (measured, and
+   corrected in place above); the wall-pad frames and the floating progress bar were real
+   and are fixed.
+3. **M3 — Diving's half is all that is left here.** Its card promises "tap again to enter
+   straight" and the `Phase` enum still has no ENTRY. Swimming's is done.
+4. ~~M4~~ — **done**, both halves.
 5. R1, ~~M6~~, M7 — robustness and readability; M7 wants the project theme, which also
    retires the ASCII-only rule.
 
@@ -356,7 +414,7 @@ do.
 ```bash
 godot --headless --path . --import
 godot --headless --path . res://tools/GeomCheck.tscn        # structure — passes
-godot --headless --path . res://tools/Playability.tscn      # reachability — 48 checks, passes
+godot --headless --path . res://tools/Playability.tscn      # reachability — 75 checks, passes
 xvfb-run -a godot --path . --rendering-driver opengl3 \
     --resolution 720x1280 res://tools/Shots.tscn            # writes /tmp/shots/*.png
 ```
