@@ -10,6 +10,17 @@ Guidance for Claude Code (and any dev) working in this repo. Read `FACE_OFF_PRD.
 
 (This supersedes the earlier landscape/left-right design. Everything below describes the portrait build; older status sections are kept for their bug history, and where they describe a left/right split they are historical, not current.)
 
+## Keeping this file current — do this every session
+
+This file is the only handoff between sessions. A new session starts with no memory of the last one; it reads this file and nothing else, so anything not written here is lost. **Before ending a session that changed anything, update CLAUDE.md in the same commit as the code.** The rule is not "write a changelog" — git log already is one — it's:
+
+- **Add a session section** (`## <what the pass was about>`) at the bottom for any pass that changes how the codebase works. Say what landed, and more importantly *why* — the constraint or bug that forced the design.
+- **Record every non-obvious bug and the rule it produced**, especially ones only a real device or a real run could catch. Those sections (the `Control.mouse_filter` swallow, the `expand`-aspect coordinate split, the export packing its own output) are the highest-value content in this file, because none of them are visible by reading the code.
+- **Correct earlier sections when they turn out to be wrong** rather than only appending. Several "this can't be done in this environment" claims were false (audio, running Godot); each is marked as a correction in place. A stale claim in this file actively stops the next session from trying.
+- **Update the contract, geometry, palette and rule sections in place** when they change — a new `MiniGame` member or `Palette` constant belongs in the contract section above, not only in a dated session note at the bottom.
+- **Land doc-only work on `main` too.** A proposal or doc fix left on a side branch is invisible to every later session. If it isn't worth merging, say so here or delete the branch.
+- Keep the "still outstanding" list honest. It's what the next session picks up first.
+
 ## Engine & stack
 
 - **Godot 4.x**, 2D renderer, **GDScript**.
